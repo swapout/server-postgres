@@ -17,7 +17,7 @@ app.use(express.json())
 app.use('/', indexRoute)
 
 app.listen(port, () => {
-    console.log(`Server is alive on port: ${port} running as: ${process.env.NODE_ENV}`)
+  console.log(`Server is alive on port: ${port} running as: ${process.env.NODE_ENV}`)
 })
 
 module.exports = app
