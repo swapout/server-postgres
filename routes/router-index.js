@@ -1,13 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const conn = require('../config/db')
+
+const adminRoutes = require('../routes/router-admin')
+
+router.use('/admin', adminRoutes)
 
 router.get('/ping', (req, res) => {
-    conn.query('SELECT 1 + 1 AS solution', function (error, results, fields) {
-        if (error) throw error;
-        console.log('The solution is: ', results[0].solution);
-    });
-
     res.send('pong')
 })
 
