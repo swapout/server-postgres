@@ -58,9 +58,11 @@ exports.createUser = async (req, res) => {
       user_id: savedUser[0].user_id
     })
 
-    const techDetails = await knex.select('technology_id').from('technology').where((builder) => {
-      builder.whereIn('name', user.technologies)
+    const techDetails = await knex.select('value', 'label').from('technology').where((builder) => {
+      builder.whereIn('label', user.technologies)
     })
+
+    savedUser[0].technologies = techDetails
 
     const userTechArray = []
 
@@ -72,9 +74,11 @@ exports.createUser = async (req, res) => {
     })
     await knex.batchInsert('user_technology_relation', userTechArray)
 
-    const langDetails = await knex.select('name', 'name').from('language').where((builder) => {
-      builder.whereIn('name', user.languages)
+    const langDetails = await knex.select('label', 'value').from('language').where((builder) => {
+      builder.whereIn('label', user.languages)
     })
+
+    savedUser[0].languages = langDetails
 
     const userLangArray = []
 
