@@ -77,14 +77,16 @@ exports.createTables = async (req, res) => {
 
     await knex.schema.createTable('language', function (table) {
       table.increments('language_id').unsigned().primary()
-      table.string('name').notNullable().unique()
-      table.string('code', 2).notNullable().unique()
+      table.string('value').notNullable().unique()
+      table.string('label').notNullable().unique()
+      table.string('code', 2).notNullable().unique().defaultTo(null)
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
     await knex.schema.createTable('technology', function (table) {
       table.increments('technology_id').unsigned().primary()
-      table.string('name').notNullable().unique()
+      table.string('value').notNullable().unique()
+      table.string('label').notNullable().unique()
       table.integer('status', 1).notNullable().defaultTo(1)
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
@@ -134,13 +136,43 @@ exports.createTables = async (req, res) => {
   }
 }
 
+exports.clearAllTables = async (req, res) => {
+  try {
+    await knex('user_language_relation').del()
+    await knex('user_technology_relation').del()
+    await knex('project_technology_relation').del()
+    await knex('project_job_relation').del()
+    await knex('job_technology_relation').del()
+    await knex('job').del()
+    await knex('collaborator').del()
+    await knex('project').del()
+    await knex('bearer_token').del()
+    await knex('reset_password_token').del()
+    // await knex('language').del()
+    await knex('user').del()
+    // await knex('technology').del()
+
+    res.send('All tables were emptied')
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
 exports.addTechnologies = async (req, res) => {
   try {
     // TODO: add email check when user routes were created
     await insertTechnologies(technologies)
     res.send('Technologies were added')
   } catch (error) {
-    res.send(error.message)
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
   }
 }
 
@@ -150,6 +182,10 @@ exports.addLanguages = async (req, res) => {
     insertLanguages(languages)
     res.send('Languages were added')
   } catch (error) {
-    res.send(error.message)
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
   }
 }

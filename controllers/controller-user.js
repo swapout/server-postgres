@@ -1,9 +1,13 @@
 const knex = require('../config/db')
 const gravatar = require('gravatar')
+const jwt = require('jsonwebtoken')
+const config = require('config')
 
 exports.createUser = async (req, res) => {
   try {
     let user = req.body.user
+
+    //TODO: add password check before delete
     delete user.confirmPassword
 
     // Get avatar from Gravatar
@@ -44,6 +48,16 @@ exports.createUser = async (req, res) => {
       'created_at'
     ).from('user').where({email: user.email})
 
+    const token = jwt.sign(
+      { user_id: savedUser[0].user_id, username: user.username, email: user.username },
+      config.get('bearerTokenSecret')
+    )
+
+    await knex('bearer_token').insert({
+      bearer_token: token,
+      user_id: savedUser[0].user_id
+    })
+
     const techDetails = await knex.select('technology_id').from('technology').where((builder) => {
       builder.whereIn('name', user.technologies)
     })
@@ -56,18 +70,12 @@ exports.createUser = async (req, res) => {
         technology_id: tech.technology_id
       })
     })
-    knex.batchInsert('user_technology_relation', userTechArray)
-      .then(function() {
-        console.log('all went well')})
-      .catch(function(error) {
-        console.log(error.message)
-      });
+    await knex.batchInsert('user_technology_relation', userTechArray)
 
-    const langDetails = await knex.select('language_id').from('language').where((builder) => {
+    const langDetails = await knex.select('name', 'name').from('language').where((builder) => {
       builder.whereIn('name', user.languages)
     })
 
-    console.log(langDetails)
     const userLangArray = []
 
     langDetails.map((lang) => {
@@ -76,15 +84,17 @@ exports.createUser = async (req, res) => {
         language_id: lang.language_id
       })
     })
-    knex.batchInsert('user_language_relation', userLangArray)
-      .then(function() {
-        console.log('all went well')})
-      .catch(function(error) {
-        console.log(error.message)
-      });
-    console.log(userTechArray)
-    console.log(userLangArray)
-    res.send(...savedUser)
+
+    console.log(langDetails)
+
+    await knex.batchInsert('user_language_relation', userLangArray)
+
+    return res.status(201).json({
+      status: 201,
+      message: 'User created',
+      user: savedUser[0],
+      token
+    })
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
