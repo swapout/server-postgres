@@ -8,6 +8,7 @@ exports.createUser = async (req, res) => {
   try {
     let user = req.body.user
 
+    // Delete confirm password
     delete user.confirmPassword
 
     // Hash password
@@ -71,7 +72,14 @@ exports.createUser = async (req, res) => {
     })
 
     // Assigns technology array to user technologies for the response
-    savedUser[0].technologies = techDetails
+    savedUser[0].technologies = []
+
+    techDetails.map((tech) => {
+      savedUser[0].technologies.push({
+        label: tech.label,
+        value: tech.value
+      })
+    })
 
     // Prepares array for user_technology_relation table
     const userTechArray = []
@@ -79,7 +87,7 @@ exports.createUser = async (req, res) => {
     techDetails.map((tech) => {
       return userTechArray.push({
         user_id: savedUser[0].user_id,
-        technology_id: tech.technology_id
+        label: tech.label
       })
     })
 
@@ -92,15 +100,23 @@ exports.createUser = async (req, res) => {
     })
 
     // Assigns language array to user languages for the response
-    savedUser[0].languages = langDetails
+    savedUser[0].languages = []
+
+    langDetails.map((lang) => {
+      savedUser[0].languages.push({
+        label: lang.label,
+        value: lang.value
+      })
+    })
 
     // Prepares array for user_language_relation table
     const userLangArray = []
 
+    console.log(langDetails)
     langDetails.map((lang) => {
       return userLangArray.push({
         user_id: savedUser[0].user_id,
-        language_id: lang.language_id
+        label: lang.label
       })
     })
 
@@ -124,6 +140,127 @@ exports.createUser = async (req, res) => {
     // console.log('Error.sql: ', error.sql)
     // console.log(Object.keys(error))
 
+    // Error handling
+    console.log(error.message)
+    res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
+exports.loginUser = async (req, res) => {
+  try {
+    const user = {
+      email: req.body.user.email,
+      password: req.body.user.password
+    }
+
+    const foundUser = await knex.select(
+      'user.user_id',
+      'user.avatar',
+      'user.username',
+      'user.password',
+      'user.email',
+      'user.githubURL',
+      'user.gitlabURL',
+      'user.bitbucketURL',
+      'user.linkedinURL',
+      'user.bio',
+    )
+      .from('user')
+      .where('email', user.email)
+      .limit(1)
+
+    if(foundUser.length === 0) {
+      return res.status(401).json({
+        status: 401,
+        message: 'Invalid credentials'
+      })
+    }
+
+    const isPasswordsMatch = await bcrypt.compare(user.password, foundUser[0].password)
+
+    if(!isPasswordsMatch) {
+      if(foundUser.length === 0) {
+        return res.status(401).json({
+          status: 401,
+          message: 'Invalid credentials'
+        })
+      }
+    }
+    delete foundUser[0].password
+
+    const lang = await knex
+      .select('label')
+      .from('user_language_relation')
+      .where('user_id', foundUser[0].user_id)
+
+    if (lang.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong'
+      })
+    }
+
+    foundUser[0].languages = []
+
+    lang.map((lang) => {
+      foundUser[0].languages.push({
+        label: lang.label,
+        value: lang.label.toLowerCase()
+      })
+    })
+
+    const tech = await knex
+      .select('label')
+      .from('user_technology_relation')
+      .where('user_id', foundUser[0].user_id)
+
+    if (tech.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong'
+      })
+    }
+
+    foundUser[0].technologies = []
+
+    tech.map((tech) => {
+      foundUser[0].technologies.push({
+        label: tech.label,
+        value: tech.label.toLowerCase()
+      })
+    })
+
+    // Creates and signs the bearer token
+    const token = jwt.sign(
+      { user_id: foundUser[0].user_id, username: foundUser[0].username, email: foundUser[0].username },
+      config.get('bearerTokenSecret')
+    )
+
+    // Inserts token into bearer_token table
+    const insertedToken = await knex('bearer_token').insert({
+      bearer_token: token,
+      user_id: foundUser[0].user_id
+    })
+
+    if (insertedToken.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong'
+      })
+    }
+
+    // Success response including the user and token
+    return res.status(200).json({
+      status: 200,
+      message: 'Login success',
+      user: foundUser[0],
+      token
+    })
+
+  } catch (error) {
     // Error handling
     console.log(error.message)
     res.status(500).json({

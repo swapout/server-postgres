@@ -76,17 +76,15 @@ exports.createTables = async (req, res) => {
     });
 
     await knex.schema.createTable('language', function (table) {
-      table.increments('language_id').unsigned().primary()
       table.string('value').notNullable().unique()
-      table.string('label').notNullable().unique()
+      table.string('label').primary()
       table.string('code', 2).notNullable().unique().defaultTo(null)
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
     await knex.schema.createTable('technology', function (table) {
-      table.increments('technology_id').unsigned().primary()
       table.string('value').notNullable().unique()
-      table.string('label').notNullable().unique()
+      table.string('label').primary()
       table.integer('status', 1).notNullable().defaultTo(1)
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
@@ -94,7 +92,7 @@ exports.createTables = async (req, res) => {
     await knex.schema.createTable('job_technology_relation', function (table) {
       table.increments('job_technology_relation_id').unsigned().primary()
       table.integer('job_id').unsigned().references('job_id').inTable('job')
-      table.integer('technology_id').unsigned().references('technology_id').inTable('technology')
+      table.string('label').references('label').inTable('technology')
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
@@ -108,21 +106,21 @@ exports.createTables = async (req, res) => {
     await knex.schema.createTable('project_technology_relation', function (table) {
       table.increments('project_technology_relation_id').unsigned().primary()
       table.integer('project_id').unsigned().references('project_id').inTable('project')
-      table.integer('technology_id').unsigned().references('technology_id').inTable('technology')
+      table.string('label').references('label').inTable('technology')
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
     await knex.schema.createTable('user_language_relation', function (table) {
       table.increments('user_language_relation_id').unsigned().primary()
-      table.integer('user_id').unsigned().references('user_id').inTable('user')
-      table.integer('language_id').unsigned().references('language_id').inTable('language')
+      table.integer('user_id').unsigned()
+      table.string('label').references('label').inTable('language')
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
     await knex.schema.createTable('user_technology_relation', function (table) {
       table.increments('user_technology_relation_id').unsigned().primary()
       table.integer('user_id').unsigned().references('user_id').inTable('user')
-      table.integer('technology_id').unsigned().references('technology_id').inTable('technology')
+      table.string('label').references('label').inTable('technology')
       table.timestamp('created_at').defaultTo(knex.fn.now())
     });
 
