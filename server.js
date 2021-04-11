@@ -6,7 +6,7 @@ const indexRoute = require('./routes/router-index')
 
 const port = config.get('port') || 8080
 
-console.log('dbHost: ', config.get('dbHost'))
+console.log('dbHost: ', config.get('db.host'))
 
 const app = express()
 
