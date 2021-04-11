@@ -7,4 +7,5 @@ const { registerUserValidation } = require('../middlewares/validation')
 router.route('/register').post(registerUserValidation, createUser)
 router.route('/login').post(loginUser)
 
+
 module.exports = router
