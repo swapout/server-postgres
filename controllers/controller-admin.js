@@ -1,4 +1,4 @@
-// const knex = require('../config/db')
+const { pool } = require('../config/db')
 
 const technologies = require('../data/technologies')
 const languages = require('../data/languages')
@@ -6,7 +6,15 @@ const languages = require('../data/languages')
 const { insertTechnologies, insertLanguages } = require('../helpers/db-helpers')
 
 exports.createTables = async (req, res) => {
-  // try {
+  try {
+    await pool.query('DROP TABLE positions')
+    await pool.query('DROP TABLE collaborators')
+    await pool.query('DROP TABLE projects')
+    await pool.query('DROP TABLE bearer_tokens')
+    await pool.query('DROP TABLE reset_password_tokens')
+    await pool.query('DROP TABLE languages')
+    await pool.query('DROP TABLE users')
+
     // await knex.schema.dropTableIfExists('user_language_relation')
     // await knex.schema.dropTableIfExists('user_technology_relation')
     // await knex.schema.dropTableIfExists('project_technology_relation')
@@ -21,67 +29,90 @@ exports.createTables = async (req, res) => {
     // await knex.schema.dropTableIfExists('user')
     // await knex.schema.dropTableIfExists('technology')
     //
-    // await knex.schema.createTable('user', function (table) {
-    //   table.increments('user_id').unsigned().primary()
-    //   table.string('avatar').notNullable()
-    //   table.string('username').notNullable().unique()
-    //   table.string('email').notNullable().unique()
-    //   table.string('password', 128).notNullable()
-    //   table.string('githubURL')
-    //   table.string('gitlabURL')
-    //   table.string('bitbucketURL')
-    //   table.string('linkedinURL')
-    //   table.text('bio')
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('bearer_token', function (table) {
-    //   table.increments('bearer_token_id').unsigned().primary()
-    //   table.text('bearer_token').notNullable()
-    //   table.integer('user_id').unsigned().references('user_id').inTable('user')
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('reset_password_token', function (table) {
-    //   table.increments('reset_password_token_id').unsigned().primary()
-    //   table.text('reset_password_token').notNullable()
-    //   table.integer('user_id').unsigned().references('user_id').inTable('user')
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('project', function (table) {
-    //   table.increments('project_id').unsigned().primary()
-    //   table.string('name').notNullable()
-    //   table.string('sortName').notNullable()
-    //   table.integer('owner').unsigned().references('user_id').inTable('user')
-    //   table.text('description')
-    //   table.string('projectURL')
-    //   table.boolean('jobsAvailable')
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('collaborator', function (table) {
-    //   table.increments('collaborator_id').unsigned().primary()
-    //   table.integer('user_id').unsigned().references('user_id').inTable('user')
-    //   table.integer('project_id').unsigned().references('project_id').inTable('project')
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('job', function (table) {
-    //   table.increments('job_id').unsigned().primary()
-    //   table.string('title').notNullable()
-    //   table.string('sortTitle').notNullable()
-    //   table.text('description').notNullable()
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
-    // await knex.schema.createTable('language', function (table) {
-    //   table.string('value').notNullable().unique()
-    //   table.string('label').primary()
-    //   table.string('code', 2).notNullable().unique().defaultTo(null)
-    //   table.timestamp('created_at').defaultTo(knex.fn.now())
-    // });
-    //
+
+    await pool.query(
+      'CREATE TABLE users (' +
+      '    id SERIAL PRIMARY KEY,' +
+      '    avatar VARCHAR(255) NOT NULL,' +
+      '    username VARCHAR(255) NOT NULL UNIQUE,' +
+      '    email VARCHAR(255) NOT NULL UNIQUE,' +
+      '    password VARCHAR(128) NOT NULL,' +
+      '    githubURL VARCHAR(255),' +
+      '    gitlabURL VARCHAR(255),' +
+      '    bitbucketURL VARCHAR(255),' +
+      '    linkedinURL VARCHAR(255),' +
+      '    bio TEXT,' +
+      '    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP' +
+      ');'
+    );
+
+    await pool.query(
+      'CREATE TABLE bearer_tokens (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   token TEXT NOT NULL,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
+      ');'
+    )
+
+    await pool.query(
+      'CREATE TABLE reset_password_tokens (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   token TEXT NOT NULL,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
+      ');'
+    )
+
+    await pool.query(
+      'CREATE TABLE projects (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   name VARCHAR(255) NOT NULL,' +
+      '   description TEXT NOT NULL,' +
+      '   projectURL VARCHAR(255),' +
+      '   jobsAvailable BOOLEAN DEFAULT FALSE,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
+      ');'
+    )
+
+    await pool.query(
+      'CREATE TABLE collaborators (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,' +
+      '   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE' +
+      ');'
+    )
+
+    await pool.query(
+      'CREATE TABLE positions (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   title VARCHAR(255) NOT NULL,' +
+      '   description TEXT NOT NULL,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,' +
+      '   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL' +
+      ');'
+    )
+
+    await pool.query(
+      'CREATE TABLE languages (' +
+      '   id SERIAL PRIMARY KEY,' +
+      '   label VARCHAR(100) NOT NULL UNIQUE,' +
+      '   value VARCHAR(100) NOT NULL UNIQUE,' +
+      '   code VARCHAR(2) NOT NULL UNIQUE,' +
+      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
+      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP' +
+      ');'
+    )
+
+    
     // await knex.schema.createTable('technology', function (table) {
     //   table.string('value').notNullable().unique()
     //   table.string('label').primary()
@@ -124,14 +155,14 @@ exports.createTables = async (req, res) => {
     //   table.timestamp('created_at').defaultTo(knex.fn.now())
     // });
     //
-    // res.send('Tables created')
-  // } catch (error) {
-  //   console.log(error.message)
-  //   return res.status(500).json({
-  //     status: 500,
-  //     message: 'Server error'
-  //   })
-  // }
+    res.send('Tables created')
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
 }
 
 exports.clearAllTables = async (req, res) => {

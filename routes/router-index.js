@@ -4,7 +4,7 @@ const router = express.Router()
 const adminRoutes = require('../routes/router-admin')
 const userRoutes = require('../routes/router-user')
 
-// router.use('/admin', adminRoutes)
+router.use('/admin', adminRoutes)
 // router.use('/user', userRoutes)
 
 router.all('*', (req, res) => {
