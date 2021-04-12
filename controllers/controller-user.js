@@ -3,6 +3,7 @@ const gravatar = require('gravatar')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const config = require('config')
+const format = require('pg-format');
 
 exports.createUser = async (req, res) => {
 
@@ -36,86 +37,90 @@ exports.createUser = async (req, res) => {
         RETURNING *;
         `,
       [user.avatar, user.username, user.email, user.password, user.githubURL, user.gitlabURL, user.bitbucketURL, user.linkedinURL, user.bio])
+
     const savedUser = response.rows[0]
 
-    console.log(savedUser)
-    
-
     // Creates and signs the bearer token
-    // const token = jwt.sign(
-    //   { user_id: savedUser[0].user_id, username: user.username, email: user.username },
-    //   config.get('bearerTokenSecret')
-    // )
-    //
-    // // Inserts token into bearer_token table
-    // await knex('bearer_token').insert({
-    //   bearer_token: token,
-    //   user_id: savedUser[0].user_id
-    // })
-    //
-    // // Gets technologies corresponding of the array of user technologies
-    // const techDetails = await knex.select('value', 'label').from('technology').where((builder) => {
-    //   builder.whereIn('label', user.technologies)
-    // })
-    //
-    // // Assigns technology array to user technologies for the response
-    // savedUser[0].technologies = []
-    //
-    // techDetails.map((tech) => {
-    //   savedUser[0].technologies.push({
-    //     label: tech.label,
-    //     value: tech.value
-    //   })
-    // })
-    //
-    // // Prepares array for user_technology_relation table
-    // const userTechArray = []
-    //
-    // techDetails.map((tech) => {
-    //   return userTechArray.push({
-    //     user_id: savedUser[0].user_id,
-    //     label: tech.label
-    //   })
-    // })
-    //
-    // // Inserts user_technology_relation to table
-    // await knex.batchInsert('user_technology_relation', userTechArray)
-    //
-    // // Gets languages corresponding of the array of user languages
-    // const langDetails = await knex.select('label', 'value').from('language').where((builder) => {
-    //   builder.whereIn('label', user.languages)
-    // })
-    //
-    // // Assigns language array to user languages for the response
-    // savedUser[0].languages = []
-    //
-    // langDetails.map((lang) => {
-    //   savedUser[0].languages.push({
-    //     label: lang.label,
-    //     value: lang.value
-    //   })
-    // })
-    //
-    // // Prepares array for user_language_relation table
-    // const userLangArray = []
-    //
-    // console.log(langDetails)
-    // langDetails.map((lang) => {
-    //   return userLangArray.push({
-    //     user_id: savedUser[0].user_id,
-    //     label: lang.label
-    //   })
-    // })
-    //
-    // // Inserts user_language_relation to table
-    // await knex.batchInsert('user_language_relation', userLangArray)
+    const token = jwt.sign(
+      { user_id: savedUser.id, username: user.username, email: user.username },
+      config.get('bearerTokenSecret')
+    )
+
+    // Inserts token into bearer_token table
+    await pool.query(
+      `
+        INSERT INTO bearer_tokens (bearer_token, user_id)
+        VALUES ($1, $2)
+        `,
+      [token, savedUser.id]
+    )
+
+    // Gets technologies corresponding of the array of user technologies
+    const technologies = await pool.query(
+      `
+        SELECT id, label, value, status 
+        FROM technologies 
+        WHERE label = ANY ($1);
+      `,
+      [user.technologies]
+    )
+    console.log(technologies.rows)
+
+    // Assigns technology array to user technologies for the response
+    const techIdArray = []
+
+    technologies.rows.map((tech) => {
+      techIdArray.push([savedUser.id, tech.id])
+    })
+
+    // Inserts user_technology_relation to table
+    const sqlTech = format(
+      `
+        INSERT INTO users_technologies_relations (user_id, technology_id)
+        VALUES %L;
+      `,
+      techIdArray
+    )
+
+    await pool.query(sqlTech)
+
+    // Gets languages corresponding of the array of user languages
+    const languages = await pool.query(
+      `
+        SELECT id, label, value 
+        FROM languages 
+        WHERE label = ANY ($1);
+      `,
+      [user.languages]
+    )
+    console.log(languages.rows)
+
+    // Assigns language array to user languages for the response
+    const langIdArray = []
+
+    languages.rows.map((lang) => {
+      langIdArray.push([savedUser.id, lang.id])
+    })
+
+    const sqlLang = format(
+      `
+        INSERT INTO users_languages_relations (user_id, language_id)
+        VALUES %L;
+      `,
+      langIdArray
+    )
+
+    await pool.query(sqlLang)
+
+    savedUser.technologies = technologies.rows
+    savedUser.languages = languages.rows
 
     // Success response including the user and token
     return res.status(201).json({
       status: 201,
       message: 'User created',
-      // user: savedUser[0],
-      // token
+      token,
+      user: savedUser
     })
 
   } catch (error) {
