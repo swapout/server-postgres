@@ -1,10 +1,11 @@
-const knex = require('../config/db')
+const { pool } = require('../config/db')
 const gravatar = require('gravatar')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const config = require('config')
 
 exports.createUser = async (req, res) => {
+
   try {
     let user = req.body.user
 
@@ -28,107 +29,93 @@ exports.createUser = async (req, res) => {
     user = verifyAndCreateSocial(user)
 
     // Inserts user into user table
-    await knex('user').insert({
-      avatar: user.avatar,
-      username: user.username,
-      email: user.email,
-      password: user.password,
-      githubURL: user.githubURL,
-      gitlabURL: user.gitlabURL,
-      bitbucketURL: user.bitbucketURL,
-      linkedinURL: user.linkedinURL,
-      bio: user.bio
-    });
+    const response = await pool.query(
+      `
+        INSERT INTO users (avatar, username, email, password, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+        RETURNING *;
+        `,
+      [user.avatar, user.username, user.email, user.password, user.githubURL, user.gitlabURL, user.bitbucketURL, user.linkedinURL, user.bio])
+    const savedUser = response.rows[0]
 
-    // Retrieves newly created user from user table
-    const savedUser = await knex.select(
-      'user_id',
-      'avatar',
-      'username',
-      'email',
-      'githubURL',
-      'gitlabURL',
-      'bitbucketURL',
-      'linkedinURL',
-      'bio',
-      'created_at'
-    ).from('user').where({email: user.email})
+    console.log(savedUser)
+    
 
     // Creates and signs the bearer token
-    const token = jwt.sign(
-      { user_id: savedUser[0].user_id, username: user.username, email: user.username },
-      config.get('bearerTokenSecret')
-    )
-
-    // Inserts token into bearer_token table
-    await knex('bearer_token').insert({
-      bearer_token: token,
-      user_id: savedUser[0].user_id
-    })
-
-    // Gets technologies corresponding of the array of user technologies
-    const techDetails = await knex.select('value', 'label').from('technology').where((builder) => {
-      builder.whereIn('label', user.technologies)
-    })
-
-    // Assigns technology array to user technologies for the response
-    savedUser[0].technologies = []
-
-    techDetails.map((tech) => {
-      savedUser[0].technologies.push({
-        label: tech.label,
-        value: tech.value
-      })
-    })
-
-    // Prepares array for user_technology_relation table
-    const userTechArray = []
-
-    techDetails.map((tech) => {
-      return userTechArray.push({
-        user_id: savedUser[0].user_id,
-        label: tech.label
-      })
-    })
-
-    // Inserts user_technology_relation to table
-    await knex.batchInsert('user_technology_relation', userTechArray)
-
-    // Gets languages corresponding of the array of user languages
-    const langDetails = await knex.select('label', 'value').from('language').where((builder) => {
-      builder.whereIn('label', user.languages)
-    })
-
-    // Assigns language array to user languages for the response
-    savedUser[0].languages = []
-
-    langDetails.map((lang) => {
-      savedUser[0].languages.push({
-        label: lang.label,
-        value: lang.value
-      })
-    })
-
-    // Prepares array for user_language_relation table
-    const userLangArray = []
-
-    console.log(langDetails)
-    langDetails.map((lang) => {
-      return userLangArray.push({
-        user_id: savedUser[0].user_id,
-        label: lang.label
-      })
-    })
-
-    // Inserts user_language_relation to table
-    await knex.batchInsert('user_language_relation', userLangArray)
+    // const token = jwt.sign(
+    //   { user_id: savedUser[0].user_id, username: user.username, email: user.username },
+    //   config.get('bearerTokenSecret')
+    // )
+    //
+    // // Inserts token into bearer_token table
+    // await knex('bearer_token').insert({
+    //   bearer_token: token,
+    //   user_id: savedUser[0].user_id
+    // })
+    //
+    // // Gets technologies corresponding of the array of user technologies
+    // const techDetails = await knex.select('value', 'label').from('technology').where((builder) => {
+    //   builder.whereIn('label', user.technologies)
+    // })
+    //
+    // // Assigns technology array to user technologies for the response
+    // savedUser[0].technologies = []
+    //
+    // techDetails.map((tech) => {
+    //   savedUser[0].technologies.push({
+    //     label: tech.label,
+    //     value: tech.value
+    //   })
+    // })
+    //
+    // // Prepares array for user_technology_relation table
+    // const userTechArray = []
+    //
+    // techDetails.map((tech) => {
+    //   return userTechArray.push({
+    //     user_id: savedUser[0].user_id,
+    //     label: tech.label
+    //   })
+    // })
+    //
+    // // Inserts user_technology_relation to table
+    // await knex.batchInsert('user_technology_relation', userTechArray)
+    //
+    // // Gets languages corresponding of the array of user languages
+    // const langDetails = await knex.select('label', 'value').from('language').where((builder) => {
+    //   builder.whereIn('label', user.languages)
+    // })
+    //
+    // // Assigns language array to user languages for the response
+    // savedUser[0].languages = []
+    //
+    // langDetails.map((lang) => {
+    //   savedUser[0].languages.push({
+    //     label: lang.label,
+    //     value: lang.value
+    //   })
+    // })
+    //
+    // // Prepares array for user_language_relation table
+    // const userLangArray = []
+    //
+    // console.log(langDetails)
+    // langDetails.map((lang) => {
+    //   return userLangArray.push({
+    //     user_id: savedUser[0].user_id,
+    //     label: lang.label
+    //   })
+    // })
+    //
+    // // Inserts user_language_relation to table
+    // await knex.batchInsert('user_language_relation', userLangArray)
 
     // Success response including the user and token
     return res.status(201).json({
       status: 201,
       message: 'User created',
-      user: savedUser[0],
-      token
+      // user: savedUser[0],
+      // token
     })
 
   } catch (error) {
