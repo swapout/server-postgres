@@ -31,88 +31,89 @@ exports.createTables = async (req, res) => {
     //
 
     await pool.query(
-      'CREATE TABLE users (' +
-      '    id SERIAL PRIMARY KEY,' +
-      '    avatar VARCHAR(255) NOT NULL,' +
-      '    username VARCHAR(255) NOT NULL UNIQUE,' +
-      '    email VARCHAR(255) NOT NULL UNIQUE,' +
-      '    password VARCHAR(128) NOT NULL,' +
-      '    githubURL VARCHAR(255),' +
-      '    gitlabURL VARCHAR(255),' +
-      '    bitbucketURL VARCHAR(255),' +
-      '    linkedinURL VARCHAR(255),' +
-      '    bio TEXT,' +
-      '    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP' +
-      ');'
+      `CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        avatar VARCHAR(255) NOT NULL,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(128) NOT NULL,
+        githubURL VARCHAR(255),
+        gitlabURL VARCHAR(255),
+        bitbucketURL VARCHAR(255),
+        linkedinURL VARCHAR(255),
+        bio TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );`
     );
 
     await pool.query(
-      'CREATE TABLE bearer_tokens (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   token TEXT NOT NULL,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
-      ');'
+      `CREATE TABLE bearer_tokens (
+        id SERIAL PRIMARY KEY,
+        bearer_token TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+       );`
     )
 
     await pool.query(
-      'CREATE TABLE reset_password_tokens (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   token TEXT NOT NULL,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
-      ');'
+      `CREATE TABLE reset_password_tokens (
+        id SERIAL PRIMARY KEY,
+        token TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+       );`
     )
 
     await pool.query(
-      'CREATE TABLE projects (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   name VARCHAR(255) NOT NULL,' +
-      '   description TEXT NOT NULL,' +
-      '   projectURL VARCHAR(255),' +
-      '   jobsAvailable BOOLEAN DEFAULT FALSE,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE' +
-      ');'
+      `CREATE TABLE projects (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        projectURL VARCHAR(255),
+        jobsAvailable BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+       );`
     )
 
     await pool.query(
-      'CREATE TABLE collaborators (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,' +
-      '   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE' +
-      ');'
+      `CREATE TABLE collaborators (
+        id SERIAL PRIMARY KEY,
+        position VARCHAR(128),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+       );`
     )
 
     await pool.query(
-      'CREATE TABLE positions (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   title VARCHAR(255) NOT NULL,' +
-      '   description TEXT NOT NULL,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,' +
-      '   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL' +
-      ');'
+      `CREATE TABLE positions (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+       );`
     )
 
     await pool.query(
-      'CREATE TABLE languages (' +
-      '   id SERIAL PRIMARY KEY,' +
-      '   label VARCHAR(100) NOT NULL UNIQUE,' +
-      '   value VARCHAR(100) NOT NULL UNIQUE,' +
-      '   code VARCHAR(2) NOT NULL UNIQUE,' +
-      '   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,' +
-      '   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP' +
-      ');'
+      `CREATE TABLE languages (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(100) NOT NULL UNIQUE,
+        value VARCHAR(100) NOT NULL UNIQUE,
+        code VARCHAR(2) NOT NULL UNIQUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+       );`
     )
 
-    
+
     // await knex.schema.createTable('technology', function (table) {
     //   table.string('value').notNullable().unique()
     //   table.string('label').primary()
