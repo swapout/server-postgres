@@ -3,7 +3,9 @@ const gravatar = require('gravatar')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const config = require('config')
-const format = require('pg-format');
+const format = require('pg-format')
+const { fetchUserTech, fetchUserLang } = require('../helpers/helper-queries')
+const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
 exports.createUser = async (req, res) => {
 
@@ -40,27 +42,19 @@ exports.createUser = async (req, res) => {
         `,
       [user.avatar, user.username, user.email, user.password, user.githubURL, user.gitlabURL, user.bitbucketURL, user.linkedinURL, user.bio])
 
+    // Simplify savedUser
     const savedUser = response.rows[0]
 
-    // Creates and signs the bearer token
-    const token = jwt.sign(
-      { user_id: savedUser.id, username: user.username, email: user.username },
-      config.get('bearerTokenSecret')
-    )
+    // Delete user password
+    delete savedUser.password
 
-    // Inserts token into bearer_token table
-    await client.query(
-      `
-        INSERT INTO bearer_tokens (bearer_token, user_id)
-        VALUES ($1, $2)
-        `,
-      [token, savedUser.id]
-    )
+    // Create and save bearer_token to DB
+    const bearer_token = await createAndSaveBearerToken(savedUser, res, client)
 
     // Gets technologies corresponding of the array of user technologies
     const technologies = await client.query(
       `
-        SELECT id, label, value, status 
+        SELECT id, label, value 
         FROM technologies 
         WHERE label = ANY ($1);
       `,
@@ -118,7 +112,7 @@ exports.createUser = async (req, res) => {
     return res.status(201).json({
       status: 201,
       message: 'User created',
-      token,
+      token: bearer_token,
       user: savedUser
     })
 
@@ -145,113 +139,59 @@ exports.createUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
   try {
+    // Save user input to user obj
     const user = {
       email: req.body.user.email,
       password: req.body.user.password
     }
 
-    const foundUser = await knex.select(
-      'user.user_id',
-      'user.avatar',
-      'user.username',
-      'user.password',
-      'user.email',
-      'user.githubURL',
-      'user.gitlabURL',
-      'user.bitbucketURL',
-      'user.linkedinURL',
-      'user.bio',
+    // Find user by ID
+    let foundUser = await pool.query(
+      `
+        SELECT * FROM users WHERE email = $1 LIMIT 1;
+      `, [user.email]
     )
-      .from('user')
-      .where('email', user.email)
-      .limit(1)
 
-    if(foundUser.length === 0) {
+    // Check if there was a user with this email
+    if(!foundUser) {
       return res.status(401).json({
         status: 401,
         message: 'Invalid credentials'
       })
     }
 
-    const isPasswordsMatch = await bcrypt.compare(user.password, foundUser[0].password)
+    // Simplify found user
+    foundUser = foundUser.rows[0]
 
+    // Compare passwords
+    const isPasswordsMatch = await bcrypt.compare(user.password, foundUser.password)
+
+    // If password don't match
     if(!isPasswordsMatch) {
-      if(foundUser.length === 0) {
-        return res.status(401).json({
-          status: 401,
-          message: 'Invalid credentials'
-        })
-      }
-    }
-    delete foundUser[0].password
-
-    const lang = await knex
-      .select('label')
-      .from('user_language_relation')
-      .where('user_id', foundUser[0].user_id)
-
-    if (lang.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Something went wrong'
+      return res.status(401).json({
+        status: 401,
+        message: 'Invalid credentials'
       })
     }
 
-    foundUser[0].languages = []
+    //Delete password information from foundUser
+    delete foundUser.password
 
-    lang.map((lang) => {
-      foundUser[0].languages.push({
-        label: lang.label,
-        value: lang.label.toLowerCase()
-      })
-    })
+    // Find user's languages and add them to foundUser
+    foundUser.languages = await fetchUserLang(foundUser.id)
 
-    const tech = await knex
-      .select('label')
-      .from('user_technology_relation')
-      .where('user_id', foundUser[0].user_id)
+    // Find user's technologies and add them to foundUser
+    foundUser.technologies = await fetchUserTech(foundUser.id)
 
-    if (tech.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Something went wrong'
-      })
-    }
-
-    foundUser[0].technologies = []
-
-    tech.map((tech) => {
-      foundUser[0].technologies.push({
-        label: tech.label,
-        value: tech.label.toLowerCase()
-      })
-    })
-
-    // Creates and signs the bearer token
-    const token = jwt.sign(
-      { user_id: foundUser[0].user_id, username: foundUser[0].username, email: foundUser[0].username },
-      config.get('bearerTokenSecret')
-    )
-
-    // Inserts token into bearer_token table
-    const insertedToken = await knex('bearer_token').insert({
-      bearer_token: token,
-      user_id: foundUser[0].user_id
-    })
-
-    if (insertedToken.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Something went wrong'
-      })
-    }
+    // Create and save bearer token to the DB
+    const bearer_token = await createAndSaveBearerToken(foundUser, res, pool)
 
     // Success response including the user and token
     return res.status(200).json({
       status: 200,
       message: 'Login success',
-      user: foundUser[0],
-      token
+      token: bearer_token,
+      user: foundUser
     })
 
   } catch (error) {
