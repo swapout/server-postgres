@@ -237,7 +237,7 @@ exports.addTechnologies = async (req, res) => {
     await client.query(sql)
     await client.query('COMMIT')
 
-    res.send('Technologies were added')
+    return res.send('Technologies were added')
 
   } catch (error) {
     await client.query('ROLLBACK')
@@ -271,8 +271,51 @@ exports.addLanguages = async (req, res) => {
     await client.query(sql)
     await client.query('COMMIT')
 
-    res.send('Languages were added')
+    return res.send('Languages were added')
 
+  } catch (error) {
+    await client.query('ROLLBACK')
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  } finally {
+    client.release()
+  }
+}
+
+exports.createViews = async (req, res) => {
+  const client = await pool.connect()
+  await client.query('BEGIN')
+
+  try {
+    await client.query(
+      `
+        DROP VIEW user_lang;
+        DROP VIEW user_tech;
+      `
+    )
+    await client.query(
+      `
+        CREATE VIEW user_lang AS
+          SELECT label, value, l.id AS language_id, u.id AS user_id, l.code
+          FROM users_languages_relations AS ulr
+          JOIN languages AS l ON l.id = ulr.language_id
+          JOIN users AS u ON u.id = ulr.user_id;
+      `
+    )
+    await client.query(
+      `
+        CREATE VIEW user_tech AS
+          SELECT label, value, t.id AS technology_id, u.id AS user_id, t.status 
+          FROM users_technologies_relations AS utr
+          JOIN technologies AS t ON t.id = utr.technology_id
+          JOIN users AS u ON u.id = utr.user_id;
+      `
+    )
+    await client.query('COMMIT')
+    return res.send('Views were added')
   } catch (error) {
     await client.query('ROLLBACK')
     console.log(error.message)

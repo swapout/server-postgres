@@ -6,14 +6,11 @@ const { fetchUserTech, fetchUserLang } = require('../helpers/helper-queries')
 const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
 exports.createUser = async (req, res) => {
-
   const client = await pool.connect()
   await client.query('BEGIN')
+
   try {
     let user = req.body.user
-
-    // Delete confirm password
-    delete user.confirmPassword
 
     // Hash password
     user.password = await bcrypt.hash(user.password, 11)
@@ -250,6 +247,37 @@ exports.getUserProfile = async (req, res) => {
   }
 }
 
+exports.deleteUser = async (req, res) => {
+  const client = await pool.connect()
+  await client.query('BEGIN')
+
+  try {
+    // Gets user ID
+    const id = req.body.decoded.id
+
+    await client.query(
+      `
+        DELETE FROM users WHERE id = $1;
+      `,
+      [id]
+    )
+
+    await client.query('COMMIT')
+    return res.status(200).json({
+      status: 200,
+      message: 'User is deleted'
+    })
+  } catch (error) {
+    await client.query('ROLLBACK')
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  } finally {
+    client.release()
+  }
+}
 /////////////
 // HELPERS //
 /////////////

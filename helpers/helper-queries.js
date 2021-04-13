@@ -4,11 +4,9 @@ exports.fetchUserTech = async (userId) => {
   try {
     const tech = await pool.query(
       `
-        SELECT label, value, t.id 
-        FROM users_technologies_relations AS utr
-        JOIN technologies AS t ON t.id = utr.technology_id
-        JOIN users AS u ON u.id = utr.user_id
-        WHERE u.id = $1;
+        SELECT label, value , technology_id AS id
+        FROM user_tech AS ut
+        WHERE user_id = $1;
       `, [userId]
     )
     return tech.rows
@@ -21,11 +19,9 @@ exports.fetchUserLang = async (userId) => {
   try {
     const lang = await pool.query(
       `
-        SELECT label, value, l.id, l.code
-        FROM users_languages_relations AS ulr
-        JOIN languages AS l ON l.id = ulr.language_id
-        JOIN users AS u ON u.id = ulr.user_id
-        WHERE u.id = $1;
+        SELECT label, value, language_id AS id
+        FROM user_lang AS ulr
+        WHERE user_id = $1;
       `, [userId]
     )
     return lang.rows

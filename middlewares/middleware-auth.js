@@ -37,7 +37,6 @@ exports.auth = async (req, res, next) => {
       // If everything ok, verifies the token
       const decoded = jwt.verify(token, bearerTokenSecret)
 
-      console.log(decoded)
       // If not verified
       if(!decoded) {
         return res.status(401).json({
