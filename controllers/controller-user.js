@@ -7,6 +7,8 @@ const format = require('pg-format');
 
 exports.createUser = async (req, res) => {
 
+  const client = await pool.connect()
+  await client.query('BEGIN')
   try {
     let user = req.body.user
 
@@ -30,7 +32,7 @@ exports.createUser = async (req, res) => {
     user = verifyAndCreateSocial(user)
 
     // Inserts user into user table
-    const response = await pool.query(
+    const response = await client.query(
       `
         INSERT INTO users (avatar, username, email, password, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
@@ -47,7 +49,7 @@ exports.createUser = async (req, res) => {
     )
 
     // Inserts token into bearer_token table
-    await pool.query(
+    await client.query(
       `
         INSERT INTO bearer_tokens (bearer_token, user_id)
         VALUES ($1, $2)
@@ -56,7 +58,7 @@ exports.createUser = async (req, res) => {
     )
 
     // Gets technologies corresponding of the array of user technologies
-    const technologies = await pool.query(
+    const technologies = await client.query(
       `
         SELECT id, label, value, status 
         FROM technologies 
@@ -64,16 +66,14 @@ exports.createUser = async (req, res) => {
       `,
       [user.technologies]
     )
-    console.log(technologies.rows)
 
     // Assigns technology array to user technologies for the response
     const techIdArray = []
-
     technologies.rows.map((tech) => {
       techIdArray.push([savedUser.id, tech.id])
     })
 
-    // Inserts user_technology_relation to table
+    // Inserts users_technologies_relations to table
     const sqlTech = format(
       `
         INSERT INTO users_technologies_relations (user_id, technology_id)
@@ -81,11 +81,10 @@ exports.createUser = async (req, res) => {
       `,
       techIdArray
     )
-
-    await pool.query(sqlTech)
+    await client.query(sqlTech)
 
     // Gets languages corresponding of the array of user languages
-    const languages = await pool.query(
+    const languages = await client.query(
       `
         SELECT id, label, value 
         FROM languages 
@@ -93,15 +92,14 @@ exports.createUser = async (req, res) => {
       `,
       [user.languages]
     )
-    console.log(languages.rows)
 
     // Assigns language array to user languages for the response
     const langIdArray = []
-
     languages.rows.map((lang) => {
       langIdArray.push([savedUser.id, lang.id])
     })
 
+    // Inserts users_languages_relations to table
     const sqlLang = format(
       `
         INSERT INTO users_languages_relations (user_id, language_id)
@@ -109,12 +107,13 @@ exports.createUser = async (req, res) => {
       `,
       langIdArray
     )
+    await client.query(sqlLang)
 
-    await pool.query(sqlLang)
-
+    // Add technologies and languages to user
     savedUser.technologies = technologies.rows
     savedUser.languages = languages.rows
 
+    await client.query('COMMIT')
     // Success response including the user and token
     return res.status(201).json({
       status: 201,
@@ -133,11 +132,14 @@ exports.createUser = async (req, res) => {
     // console.log(Object.keys(error))
 
     // Error handling
+    await client.query('ROLLBACK')
     console.log(error.message)
     res.status(500).json({
       status: 500,
       message: 'Server error'
     })
+  } finally {
+    client.release()
   }
 }
 
