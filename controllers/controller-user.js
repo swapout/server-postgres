@@ -248,26 +248,28 @@ exports.getUserProfile = async (req, res) => {
 }
 
 exports.deleteUser = async (req, res) => {
+  // Create connection and start a transaction
   const client = await pool.connect()
   await client.query('BEGIN')
 
   try {
     // Gets user ID
     const id = req.body.decoded.id
-
+    // Delete a user with the user ID from the decoded token
     await client.query(
       `
         DELETE FROM users WHERE id = $1;
       `,
       [id]
     )
-
+    // If everything went well, commit the changes to the DB
     await client.query('COMMIT')
     return res.status(200).json({
       status: 200,
       message: 'User is deleted'
     })
   } catch (error) {
+    // If something went wrong, rollback all the changes in the DB
     await client.query('ROLLBACK')
     console.log(error)
     return res.status(500).json({
@@ -275,16 +277,18 @@ exports.deleteUser = async (req, res) => {
       message: error.message
     })
   } finally {
+    // Terminate connection
     client.release()
   }
 }
 
 exports.logout = async (req, res) => {
-  // Get user ID
-  const id = req.body.decoded.id
-  const {token} = req.body
+  // Get user ID and token
+  const { id } = req.body.decoded
+  const { token } = req.body
 
   try {
+    // Delete a bearer token matching the token and the user ID
     await pool.query(
       `
         DELETE FROM bearer_tokens
@@ -292,9 +296,37 @@ exports.logout = async (req, res) => {
       `,
       [id, token]
     )
+
     return res.status(200).json({
       status: 200,
       message: 'logout successful'
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.logoutAll = async (req, res) => {
+  // Get user ID and token
+  const { id } = req.body.decoded
+  console.log(id)
+  try {
+    // Delete a bearer token matching the token and the user ID
+    await pool.query(
+      `
+        DELETE FROM bearer_tokens
+        WHERE user_id = $1;
+      `,
+      [id]
+    )
+
+    return res.status(200).json({
+      status: 200,
+      message: 'logout from all devices was successful'
     })
   } catch (error) {
     console.log(error)
