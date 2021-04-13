@@ -278,6 +278,33 @@ exports.deleteUser = async (req, res) => {
     client.release()
   }
 }
+
+exports.logout = async (req, res) => {
+  // Get user ID
+  const id = req.body.decoded.id
+  const {token} = req.body
+
+  try {
+    await pool.query(
+      `
+        DELETE FROM bearer_tokens
+        WHERE user_id = $1 AND bearer_token = $2;
+      `,
+      [id, token]
+    )
+    return res.status(200).json({
+      status: 200,
+      message: 'logout successful'
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
 /////////////
 // HELPERS //
 /////////////

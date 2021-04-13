@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
 const config = require('config')
+const { pool } = require('../config/db')
 
 /**
  * Authentication middleware,
@@ -22,6 +23,7 @@ exports.auth = async (req, res, next) => {
 
     // Checks if token exists
     if (!token) {
+      console.log('No token found in header')
       return res.status(401).json({
         status: 401,
         message: 'Authentication error'
@@ -29,6 +31,7 @@ exports.auth = async (req, res, next) => {
     }
     // Checks if secret exists
     if(!bearerTokenSecret) {
+      console.log('Missing bearerTokenSecret')
       return res.status(500).json({
         status: 500,
         message: 'Server error'
@@ -39,6 +42,24 @@ exports.auth = async (req, res, next) => {
 
       // If not verified
       if(!decoded) {
+        console.log('Token is not verified')
+        return res.status(401).json({
+          status: 401,
+          message: 'Authentication error'
+        })
+      }
+
+      const foundToken = await pool.query(
+        `
+          SELECT *
+          FROM bearer_tokens
+          WHERE bearer_token = $1;
+        `,
+        [token]
+      )
+
+      if(foundToken.rows.length === 0) {
+        console.log('Not token found in the DB')
         return res.status(401).json({
           status: 401,
           message: 'Authentication error'
@@ -53,12 +74,14 @@ exports.auth = async (req, res, next) => {
     console.log(error.name)
     // Checks for JWT token validation error
     if(error.name === 'JsonWebTokenError') {
+      console.log('Web token auth error')
       return res.status(401).json({
         status: 401,
         message: 'Authentication error'
       })
     }
     // General error handling
+    console.log('Something went wrong during token verification')
     return res.status(500).json({
       status: 500,
       message: error.message
