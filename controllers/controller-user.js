@@ -1,8 +1,6 @@
 const { pool } = require('../config/db')
 const gravatar = require('gravatar')
-const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const config = require('config')
 const format = require('pg-format')
 const { fetchUserTech, fetchUserLang } = require('../helpers/helper-queries')
 const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
@@ -194,6 +192,54 @@ exports.loginUser = async (req, res) => {
       user: foundUser
     })
 
+  } catch (error) {
+    // Error handling
+    console.log(error.message)
+    res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    // Gets user ID
+    const id = req.body.decoded.id
+
+    let foundUser = await pool.query(
+      `
+        SELECT * 
+        FROM users 
+        WHERE users.id = $1
+        LIMIT 1;
+      `,
+      [id]
+    )
+
+    if(foundUser.rows.length === 0) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Not authorized'
+      })
+    }
+
+    foundUser = foundUser.rows[0]
+
+    //Delete password information from foundUser
+    delete foundUser.password
+
+    // Find user's languages and add them to foundUser
+    foundUser.languages = await fetchUserLang(foundUser.id)
+
+    // Find user's technologies and add them to foundUser
+    foundUser.technologies = await fetchUserTech(foundUser.id)
+
+    return res.status(200).json({
+      status: 200,
+      message: `Profile of ${foundUser.username}`,
+      user: foundUser
+    })
   } catch (error) {
     // Error handling
     console.log(error.message)
