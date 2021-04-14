@@ -47,61 +47,9 @@ exports.createUser = async (req, res) => {
     // Create and save bearer_token to DB
     const bearer_token = await createAndSaveBearerToken(savedUser, res, client)
 
-    // Gets technologies corresponding of the array of user technologies
-    const technologies = await client.query(
-      `
-        SELECT id, label, value 
-        FROM technologies 
-        WHERE label = ANY ($1);
-      `,
-      [user.technologies]
-    )
-
-    // Assigns technology array to user technologies for the response
-    const techIdArray = []
-    technologies.rows.map((tech) => {
-      techIdArray.push([savedUser.id, tech.id])
-    })
-
-    // Inserts users_technologies_relations to table
-    const sqlTech = format(
-      `
-        INSERT INTO users_technologies_relations (user_id, technology_id)
-        VALUES %L;
-      `,
-      techIdArray
-    )
-    await client.query(sqlTech)
-
-    // Gets languages corresponding of the array of user languages
-    const languages = await client.query(
-      `
-        SELECT id, label, value 
-        FROM languages 
-        WHERE label = ANY ($1);
-      `,
-      [user.languages]
-    )
-
-    // Assigns language array to user languages for the response
-    const langIdArray = []
-    languages.rows.map((lang) => {
-      langIdArray.push([savedUser.id, lang.id])
-    })
-
-    // Inserts users_languages_relations to table
-    const sqlLang = format(
-      `
-        INSERT INTO users_languages_relations (user_id, language_id)
-        VALUES %L;
-      `,
-      langIdArray
-    )
-    await client.query(sqlLang)
-
-    // Add technologies and languages to user
-    savedUser.technologies = technologies.rows
-    savedUser.languages = languages.rows
+    // Insert technologies and languages to DB and receive the formatted arrays back
+    savedUser.technologies = await insertUserTech(user.technologies, savedUser.id, client)
+    savedUser.languages = await insertUserLang(user.languages, savedUser.id, client)
 
     await client.query('COMMIT')
     // Success response including the user and token
@@ -328,20 +276,16 @@ exports.updateUser = async (req, res) => {
     // Simplify updatedUser
     updatedUser = updatedUser.rows[0]
 
-    // Replace old languages with new ones
+    // Replace old languages with new ones and assign it to savedUser
     await deleteUserLang(id, client)
-    await insertUserLang(user.languages, id, client)
+    updatedUser.languages = await insertUserLang(user.languages, id, client)
 
-    // Replace old technologies with new ones
+    // Replace old technologies with new ones and assign it to savedUser
     await deleteUserTech(id, client)
-    await insertUserTech(user.technologies, id, client)
+    updatedUser.technologies = await insertUserTech(user.technologies, id, client)
 
     // If everything went well, commit the changes to the DB
     await client.query('COMMIT')
-
-    // Fetch new languages and technologies for the response
-    updatedUser.languages = await fetchUserLang(id)
-    updatedUser.technologies = await fetchUserTech(id)
 
     return res.status(200).json({
       status: 200,

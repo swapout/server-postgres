@@ -28,7 +28,7 @@ exports.insertUserTech = async (technologiesArray, id, client) => {
       techIdArray
     )
     await client.query(sqlTech)
-
+    return technologies.rows
   } catch (error) {
     console.log('insertUserTech error: ', error.message)
   }
@@ -61,7 +61,7 @@ exports.insertUserLang = async (languagesArray, id, client) => {
       langIdArray
     )
     await client.query(sqlLang)
-
+    return languages.rows
   } catch (error) {
     console.log('insertUserLang error: ', error.message)
   }
