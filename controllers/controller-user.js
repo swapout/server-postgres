@@ -40,15 +40,12 @@ exports.createUser = async (req, res) => {
       `
         INSERT INTO users (avatar, username, email, password, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-        RETURNING *;
+        RETURNING id, avatar, username, email, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio, created_at, updated_at;
         `,
       [user.avatar, user.username, user.email, user.password, user.githubURL, user.gitlabURL, user.bitbucketURL, user.linkedinURL, user.bio])
 
     // Simplify savedUser
     const savedUser = response.rows[0]
-
-    // Delete user password
-    delete savedUser.password
 
     // Create and save bearer_token to DB
     const bearer_token = await createAndSaveBearerToken(savedUser, res, client)
@@ -161,7 +158,7 @@ exports.getUserProfile = async (req, res) => {
 
     let foundUser = await pool.query(
       `
-        SELECT * 
+        SELECT id, avatar, username, email, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio, created_at, updated_at 
         FROM users 
         WHERE users.id = $1
         LIMIT 1;
@@ -177,9 +174,6 @@ exports.getUserProfile = async (req, res) => {
     }
 
     foundUser = foundUser.rows[0]
-
-    //Delete password information from foundUser
-    delete foundUser.password
 
     // Find user's languages and add them to foundUser
     foundUser.languages = await fetchUserLang(foundUser.id)

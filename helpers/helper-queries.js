@@ -1,6 +1,10 @@
 const { pool } = require('../config/db')
 const format = require('pg-format')
 
+//////////////////
+// USER HELPERS //
+/////////////////
+
 exports.insertUserTech = async (technologiesArray, id, client) => {
   try {
     // Gets technologies corresponding of the array of user technologies
@@ -120,5 +124,42 @@ exports.deleteUserTech = async (userId, client) => {
     )
   } catch (error) {
     console.log('deleteUserTech error: ', error.message)
+  }
+}
+
+/////////////////////
+// PROJECT HELPERS //
+////////////////////
+
+exports.insertProjectTech = async (technologiesArray, projectId, client) => {
+  try {
+    // Gets technologies corresponding of the array of project technologies
+    const technologies = await client.query(
+      `
+        SELECT id, label, value 
+        FROM technologies 
+        WHERE label = ANY ($1);
+      `,
+      [technologiesArray]
+    )
+
+    // Assigns technology array to project technologies for the response
+    const techIdArray = []
+    technologies.rows.map((tech) => {
+      techIdArray.push([projectId, tech.id])
+    })
+
+    // Inserts projects_technologies_relations to table
+    const sqlTech = format(
+      `
+        INSERT INTO projects_technologies_relations (project_id, technology_id)
+        VALUES %L;
+      `,
+      techIdArray
+    )
+    await client.query(sqlTech)
+    return technologies.rows
+  } catch (error) {
+    console.log('insertProjectTech error: ', error.message)
   }
 }
