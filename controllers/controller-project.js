@@ -22,24 +22,21 @@ exports.createProject = async (req, res) => {
       [project.name, project.description, project.projectURL, id]
     )
 
-    // Simplify project
-    savedProject = savedProject.rows[0]
-
     // Add technologies to project
-    savedProject.technologies = await insertProjectTech(project.technologies, savedProject.id, client)
+    savedProject.rows[0].technologies = await insertProjectTech(project.technologies, savedProject.id, client)
 
     await client.query('COMMIT')
     // Success response including the project
     return res.status(201).json({
       status: 201,
       message: 'Project created',
-      project: shapeProjectResponse([savedProject])
+      project: normalizeProject(savedProject.rows)
     })
   } catch (error) {
     // Error handling
     await client.query('ROLLBACK')
     console.log(error.message)
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
@@ -70,20 +67,18 @@ exports.getProjectById = async (req, res) => {
         message: 'Project not found'
       })
     }
-    // Simplify project
-    foundProject = foundProject.rows[0]
 
     // Get technologies belonging to the project
-    foundProject.technologies = await fetchProjectTech(projectId)
+    foundProject.rows[0].technologies = await fetchProjectTech(projectId)
 
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: shapeProjectResponse([foundProject])
+      project: normalizeProject(foundProject.rows)
     })
   } catch (error) {
     console.log(error.message)
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
@@ -95,7 +90,7 @@ exports.getProjectsByUser = async (req, res) => {
   const userId = req.body.decoded.id
 
   try {
-    // Get all projects belonging to a user
+    // Get all projects belonging to a user with technologies
     let foundProjects = await pool.query(
       `
         SELECT 
@@ -107,7 +102,13 @@ exports.getProjectsByUser = async (req, res) => {
           p.jobsavailable,
           p.created_at,
           p.updated_at,
-          jsonb_agg(jsonb_build_object('label', pt.label, 'value', pt.value, 'id', pt.technology_id)) AS technologies
+          jsonb_agg(
+            jsonb_build_object(
+              'label', pt.label, 
+              'value', pt.value, 
+              'id', pt.technology_id
+            )
+          ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
         WHERE p.owner = $1
@@ -116,17 +117,74 @@ exports.getProjectsByUser = async (req, res) => {
       [userId]
     )
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 200,
       message: 'Get projects by user ID were successful',
-      projects: shapeProjectResponse(foundProjects.rows)
+      projects: normalizeProject(foundProjects.rows)
     })
   } catch (error) {
     console.log(error.message)
-    res.status(500).json({
+    returnres.status(500).json({
       status: 500,
       message: 'Server error'
     })
+  }
+}
+
+exports.updateProjectById = async (req, res) => {
+  // Create DB connection pool and start transaction
+  const client = await pool.connect()
+  await client.query('BEGIN')
+  // ID of the project that comes from the query string
+  const projectId = req.params.id
+  // The user ID decoded from the token
+  const id = req.body.decoded.id
+  // Preparing the project fields to update
+  const project = {
+    name: req.body.project.name,
+    description: req.body.project.description,
+    technologies: req.body.project.technologies,
+    projectURL: req.body.project.projectURL
+  }
+  // Set current time for updated_at
+  const currentLocalTime = moment();
+
+  try {
+    // Update project details
+    let updatedProject = await client.query(
+      `
+        UPDATE projects
+        SET name = $1,
+            description = $2,
+            projectURL = $3,
+            updated_at = $4
+        WHERE owner = $5 AND id = $6
+        RETURNING id, owner, name, description, projectURL, jobsAvailable, created_at, updated_at
+      `,
+      [project.name, project.description, project.projectURL, currentLocalTime, id, projectId]
+    )
+
+    // If no project is matching the user ID and project ID
+    if (updatedProject.rows.length === 0) {
+      return res.status(403).json({
+        status: 403,
+        message: 'You are not authorized to edit this project'
+      })
+    }
+    await deleteProjectTech(projectId, client)
+    updatedProject.rows[0].technologies = await insertProjectTech(project.technologies, projectId, client)
+    await client.query('COMMIT')
+    return res.send(updatedProject.rows)
+  }  catch (error) {
+    // Error handling
+    await client.query('ROLLBACK')
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  } finally {
+    client.release()
   }
 }
 
@@ -134,7 +192,7 @@ exports.getProjectsByUser = async (req, res) => {
 // HELPERS //
 /////////////
 
-const shapeProjectResponse = (projectsArray) => {
+const normalizeProject = (projectsArray) => {
    return projectsArray.map((project) => {
     return {
       id: project.id,

@@ -60,7 +60,7 @@ exports.createUser = async (req, res) => {
       status: 201,
       message: 'User created',
       token: bearer_token,
-      user: shapeUserResponse(savedUser)
+      user: normalizeUser(savedUser)
     })
 
   } catch (error) {
@@ -75,7 +75,7 @@ exports.createUser = async (req, res) => {
     // Error handling
     await client.query('ROLLBACK')
     console.log(error.message)
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
@@ -138,13 +138,13 @@ exports.loginUser = async (req, res) => {
       status: 200,
       message: 'Login success',
       token: bearer_token,
-      user: shapeUserResponse(foundUser)
+      user: normalizeUser(foundUser)
     })
 
   } catch (error) {
     // Error handling
     console.log(error.message)
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
@@ -184,12 +184,12 @@ exports.getUserProfile = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: `Profile of ${foundUser.username}`,
-      user: shapeUserResponse(foundUser)
+      user: normalizeUser(foundUser)
     })
   } catch (error) {
     // Error handling
     console.log(error.message)
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
@@ -290,7 +290,7 @@ exports.updateUser = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'User is updated',
-      user: shapeUserResponse(updatedUser)
+      user: normalizeUser(updatedUser)
     })
   } catch (error) {
     // If something went wrong, rollback all the changes in the DB
@@ -382,7 +382,7 @@ const verifyAndCreateSocial = (user) => {
   return user
 }
 
-const shapeUserResponse = (user) => {
+const normalizeUser = (user) => {
   return {
     id: user.id,
     avatar: user.avatar,

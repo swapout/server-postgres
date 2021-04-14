@@ -5,7 +5,7 @@ const {
   getProjectById,
   // getAllProjects,
   getProjectsByUser,
-  // updateProjectById,
+  updateProjectById,
   // deleteProjectById
 } = require('../controllers/controller-project')
 const { auth } = require('../middlewares/middleware-auth')
@@ -16,7 +16,7 @@ router.post('/', auth, createProject)
 // router.get('/', auth, getAllProjects)
 router.get('/user', auth, getProjectsByUser)
 router.get('/:id', auth, getProjectById)
-// router.patch('/:id', auth, updateProjectById)
+router.patch('/:id', auth, updateProjectById)
 // router.delete('/:id', auth, deleteProjectById)
 
 module.exports = router
