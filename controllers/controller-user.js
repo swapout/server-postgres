@@ -2,7 +2,8 @@ const { pool } = require('../config/db')
 const gravatar = require('gravatar')
 const bcrypt = require('bcryptjs')
 const format = require('pg-format')
-const { fetchUserTech, fetchUserLang } = require('../helpers/helper-queries')
+const moment = require('moment')
+const { insertUserTech, insertUserLang, fetchUserTech, fetchUserLang, deleteUserLang, deleteUserTech } = require('../helpers/helper-queries')
 const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
 exports.createUser = async (req, res) => {
@@ -282,6 +283,85 @@ exports.deleteUser = async (req, res) => {
   }
 }
 
+exports.updateUser = async (req, res) => {
+  // Create connection and start a transaction
+  const client = await pool.connect()
+  await client.query('BEGIN')
+
+  try {
+    // Gets user ID
+    const id = req.body.decoded.id
+
+    // Create the user object from user input
+    let user = {
+      bio: req.body.user.bio,
+      githubURL: req.body.user.githubURL,
+      gitlabURL: req.body.user.gitlabURL,
+      bitbucketURL: req.body.user.bitbucketURL,
+      linkedinURL: req.body.user.linkedinURL,
+      technologies: req.body.user.technologies,
+      languages: req.body.user.languages
+    }
+
+    // Verify and create social profiles
+    user = verifyAndCreateSocial(user)
+
+    // Set current time for updated_at
+    const currentLocalTime = moment();
+
+    // Update user details
+    let updatedUser = await client.query(
+      `
+        UPDATE users
+        SET bio = $1,
+            githubURL = $2,
+            gitlabURL = $3,
+            bitbucketURL = $4,
+            linkedinURL = $5,
+            updated_at = $6
+        WHERE id = $7
+        RETURNING id, avatar, username, email, bio, githubURL, gitlabURL, bitbucketURL, linkedinURL, created_at, updated_at;
+      `,
+      [user.bio, user.githubURL, user.gitlabURL, user.bitbucketURL, user.linkedinURL, currentLocalTime, id]
+    )
+
+    // Simplify updatedUser
+    updatedUser = updatedUser.rows[0]
+
+    // Replace old languages with new ones
+    await deleteUserLang(id, client)
+    await insertUserLang(user.languages, id, client)
+
+    // Replace old technologies with new ones
+    await deleteUserTech(id, client)
+    await insertUserTech(user.technologies, id, client)
+
+    // If everything went well, commit the changes to the DB
+    await client.query('COMMIT')
+
+    // Fetch new languages and technologies for the response
+    updatedUser.languages = await fetchUserLang(id)
+    updatedUser.technologies = await fetchUserTech(id)
+
+    return res.status(200).json({
+      status: 200,
+      message: 'User is updated',
+      user: updatedUser
+    })
+  } catch (error) {
+    // If something went wrong, rollback all the changes in the DB
+    await client.query('ROLLBACK')
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  } finally {
+    // Terminate connection
+    client.release()
+  }
+}
+
 exports.logout = async (req, res) => {
   // Get user ID and token
   const { id } = req.body.decoded
@@ -313,7 +393,7 @@ exports.logout = async (req, res) => {
 exports.logoutAll = async (req, res) => {
   // Get user ID and token
   const { id } = req.body.decoded
-  console.log(id)
+
   try {
     // Delete a bearer token matching the token and the user ID
     await pool.query(
