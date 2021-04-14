@@ -60,7 +60,7 @@ exports.createUser = async (req, res) => {
       status: 201,
       message: 'User created',
       token: bearer_token,
-      user: savedUser
+      user: shapeUserResponse(savedUser)
     })
 
   } catch (error) {
@@ -138,7 +138,7 @@ exports.loginUser = async (req, res) => {
       status: 200,
       message: 'Login success',
       token: bearer_token,
-      user: foundUser
+      user: shapeUserResponse(foundUser)
     })
 
   } catch (error) {
@@ -184,7 +184,7 @@ exports.getUserProfile = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: `Profile of ${foundUser.username}`,
-      user: foundUser
+      user: shapeUserResponse(foundUser)
     })
   } catch (error) {
     // Error handling
@@ -290,7 +290,7 @@ exports.updateUser = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'User is updated',
-      user: updatedUser
+      user: shapeUserResponse(updatedUser)
     })
   } catch (error) {
     // If something went wrong, rollback all the changes in the DB
@@ -380,4 +380,21 @@ const verifyAndCreateSocial = (user) => {
     user.linkedinURL = `https://www.linkedin.com/in/${user.linkedinURL}/`
   }
   return user
+}
+
+const shapeUserResponse = (user) => {
+  return {
+    id: user.id,
+    avatar: user.avatar,
+    username: user.username,
+    githubURL: user.githuburl,
+    gitlabURL: user.gitlaburl,
+    bitbucketURL: user.bitbucketurl,
+    linkedinURL: user.linkedinurl,
+    bio: user.bio,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+    languages: user.languages,
+    technologies: user.technologies
+  }
 }
