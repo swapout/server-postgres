@@ -23,7 +23,7 @@ exports.createProject = async (req, res) => {
     )
 
     // Add technologies to project
-    savedProject.rows[0].technologies = await insertProjectTech(project.technologies, savedProject.id, client)
+    savedProject.rows[0].technologies = await insertProjectTech(project.technologies, savedProject.rows[0].id, client)
 
     await client.query('COMMIT')
     // Success response including the project
@@ -171,10 +171,15 @@ exports.updateProjectById = async (req, res) => {
         message: 'You are not authorized to edit this project'
       })
     }
+    // Update project technologies relations
     await deleteProjectTech(projectId, client)
     updatedProject.rows[0].technologies = await insertProjectTech(project.technologies, projectId, client)
     await client.query('COMMIT')
-    return res.send(updatedProject.rows)
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully updated project',
+      project: normalizeProject(updatedProject.rows)
+    })
   }  catch (error) {
     // Error handling
     await client.query('ROLLBACK')
@@ -188,11 +193,64 @@ exports.updateProjectById = async (req, res) => {
   }
 }
 
+exports.deleteProjectById = async (req, res) => {
+  // Get project ID from the query string
+  const projectId = req.params.id
+  // Get the user ID from the token
+  const userId = req.body.decoded.id
+
+  try {
+    // Delete project where user is owner of the project
+    const deletedProject = await pool.query(
+      `
+        DELETE FROM projects
+        WHERE id = $1 AND owner = $2
+        RETURNING *;
+      `,
+      [projectId, userId]
+    )
+
+    if(deletedProject.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong',
+      })
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully deleted project',
+    })
+  } catch (error) {
+    // Error handling
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
 /////////////
 // HELPERS //
 /////////////
 
 const normalizeProject = (projectsArray) => {
+  if(projectsArray.length === 1) {
+    const project = projectsArray[0]
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      projectURL: project.projecturl,
+      jobsAvailable: project.jobsavailable,
+      owner: project.owner,
+      technologies: project.technologies,
+      createdAt: project.created_at,
+      updatedAt: project.updated_at
+    }
+  }
+
    return projectsArray.map((project) => {
     return {
       id: project.id,
@@ -202,8 +260,8 @@ const normalizeProject = (projectsArray) => {
       jobsAvailable: project.jobsavailable,
       owner: project.owner,
       technologies: project.technologies,
-      created_at: project.created_at,
-      updated_at: project.updated_at
+      createdAt: project.created_at,
+      updatedAt: project.updated_at
     }
   })
 

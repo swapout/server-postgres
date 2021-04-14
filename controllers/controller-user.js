@@ -205,29 +205,32 @@ exports.deleteUser = async (req, res) => {
     // Gets user ID
     const id = req.body.decoded.id
     // Delete a user with the user ID from the decoded token
-    await client.query(
+    const deletedUser = await client.query(
       `
-        DELETE FROM users WHERE id = $1;
+        DELETE FROM users 
+        WHERE id = $1
+        RETURNING *;
       `,
       [id]
     )
-    // If everything went well, commit the changes to the DB
-    await client.query('COMMIT')
+
+    if(deletedUser.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong',
+      })
+    }
+
     return res.status(200).json({
       status: 200,
       message: 'User is deleted'
     })
   } catch (error) {
-    // If something went wrong, rollback all the changes in the DB
-    await client.query('ROLLBACK')
     console.log(error)
     return res.status(500).json({
       status: 500,
       message: error.message
     })
-  } finally {
-    // Terminate connection
-    client.release()
   }
 }
 
@@ -392,8 +395,8 @@ const normalizeUser = (user) => {
     bitbucketURL: user.bitbucketurl,
     linkedinURL: user.linkedinurl,
     bio: user.bio,
-    created_at: user.created_at,
-    updated_at: user.updated_at,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
     languages: user.languages,
     technologies: user.technologies
   }
