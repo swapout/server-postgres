@@ -1,17 +1,18 @@
 const { pool } = require('../config/db')
 const moment = require('moment')
 
-const { insertProjectTech } = require('../helpers/helper-queries')
+const { insertProjectTech, fetchProjectTech } = require('../helpers/helper-queries')
 
 exports.createProject = async (req, res) => {
   const client = await pool.connect()
   await client.query('BEGIN')
-  // Gets user ID
+  // Get user ID
   const { id } = req.body.decoded
-  // Gets project details from front-end
+  // Get project details from front-end
   const { project } = req.body
 
   try {
+    // Save project into DB
     let savedProject = await client.query(
       `
         INSERT INTO projects (name, description, projectURL, owner)
@@ -20,13 +21,15 @@ exports.createProject = async (req, res) => {
       `,
       [project.name, project.description, project.projectURL, id]
     )
-    
+
+    // Simplify project
     savedProject = savedProject.rows[0]
 
+    // Add technologies to project
     savedProject.technologies = await insertProjectTech(project.technologies, savedProject.id, client)
 
     await client.query('COMMIT')
-    // Success response including the user and token
+    // Success response including the project
     return res.status(201).json({
       status: 201,
       message: 'Project created',

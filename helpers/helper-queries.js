@@ -163,3 +163,31 @@ exports.insertProjectTech = async (technologiesArray, projectId, client) => {
     console.log('insertProjectTech error: ', error.message)
   }
 }
+
+exports.fetchProjectTech = async (projectId) => {
+  try {
+    const tech = await pool.query(
+      `
+        SELECT label, value, technology_id AS id
+        FROM project_tech AS pt
+        WHERE project_id = $1;
+      `, [projectId]
+    )
+    return tech.rows
+  } catch (error) {
+    console.log('fetchUserTech error: ', error.message)
+  }
+}
+
+exports.deleteProjectTech = async (projectId, client) => {
+  try {
+    await client.query(
+      `
+        DELETE FROM projects_technologies_relations
+        WHERE project_id = $1;
+      `, [projectId]
+    )
+  } catch (error) {
+    console.log('deleteUserTech error: ', error.message)
+  }
+}

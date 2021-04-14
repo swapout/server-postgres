@@ -294,6 +294,7 @@ exports.createViews = async (req, res) => {
       `
         DROP VIEW user_lang;
         DROP VIEW user_tech;
+        DROP VIEW project_tech;
       `
     )
     await client.query(
@@ -312,6 +313,16 @@ exports.createViews = async (req, res) => {
           FROM users_technologies_relations AS utr
           JOIN technologies AS t ON t.id = utr.technology_id
           JOIN users AS u ON u.id = utr.user_id;
+      `
+    )
+
+    await client.query(
+      `
+        CREATE VIEW project_tech AS
+          SELECT label, value, t.id AS technology_id, p.id AS project_id 
+          FROM projects_technologies_relations AS ptr
+          JOIN technologies AS t ON t.id = ptr.technology_id
+          JOIN projects AS p ON p.id = ptr.project_id;
       `
     )
     await client.query('COMMIT')
