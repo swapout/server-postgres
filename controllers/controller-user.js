@@ -1,9 +1,15 @@
 const { pool } = require('../config/db')
 const gravatar = require('gravatar')
 const bcrypt = require('bcryptjs')
-const format = require('pg-format')
 const moment = require('moment')
-const { insertUserTech, insertUserLang, fetchUserTech, fetchUserLang, deleteUserLang, deleteUserTech } = require('../helpers/helper-queries')
+const {
+  insertUserTech,
+  insertUserLang,
+  fetchUserTech,
+  fetchUserLang,
+  deleteUserLang,
+  deleteUserTech
+} = require('../helpers/helper-queries')
 const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
 exports.createUser = async (req, res) => {
