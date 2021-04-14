@@ -4,7 +4,7 @@ const {
   createProject,
   getProjectById,
   // getAllProjects,
-  // getProjectsByUser,
+  getProjectsByUser,
   // updateProjectById,
   // deleteProjectById
 } = require('../controllers/controller-project')
@@ -14,7 +14,7 @@ const router = express.Router()
 
 router.post('/', auth, createProject)
 // router.get('/', auth, getAllProjects)
-// router.get('/user', auth, getProjectsByUser)
+router.get('/user', auth, getProjectsByUser)
 router.get('/:id', auth, getProjectById)
 // router.patch('/:id', auth, updateProjectById)
 // router.delete('/:id', auth, deleteProjectById)

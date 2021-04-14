@@ -33,7 +33,7 @@ exports.createProject = async (req, res) => {
     return res.status(201).json({
       status: 201,
       message: 'Project created',
-      project: shapeProjectResponse(savedProject)
+      project: shapeProjectResponse([savedProject])
     })
   } catch (error) {
     // Error handling
@@ -79,7 +79,7 @@ exports.getProjectById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: shapeProjectResponse(foundProject)
+      project: shapeProjectResponse([foundProject])
     })
   } catch (error) {
     console.log(error.message)
@@ -90,16 +90,63 @@ exports.getProjectById = async (req, res) => {
   }
 }
 
-const shapeProjectResponse = (project) => {
-  return {
-    id: project.id,
-    name: project.name,
-    description: project.description,
-    projectURL: project.projecturl,
-    jobsAvailable: project.jobsavailable,
-    owner: project.owner,
-    technologies: project.technologies,
-    created_at: project.created_at,
-    updated_at: project.updated_at
+exports.getProjectsByUser = async (req, res) => {
+  // Get user ID from token
+  const userId = req.body.decoded.id
+
+  try {
+    // Get all projects belonging to a user
+    let foundProjects = await pool.query(
+      `
+        SELECT 
+          p.id,
+          p.owner,
+          p.name, 
+          p.description,
+          p.projecturl,
+          p.jobsavailable,
+          p.created_at,
+          p.updated_at,
+          jsonb_agg(jsonb_build_object('label', pt.label, 'value', pt.value, 'id', pt.technology_id)) AS technologies
+        FROM projects AS p
+        JOIN project_tech AS pt ON pt.project_id = p.id
+        WHERE p.owner = $1
+        GROUP BY p.name, p.id;
+      `,
+      [userId]
+    )
+
+    res.status(200).json({
+      status: 200,
+      message: 'Get projects by user ID were successful',
+      projects: shapeProjectResponse(foundProjects.rows)
+    })
+  } catch (error) {
+    console.log(error.message)
+    res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
   }
+}
+
+/////////////
+// HELPERS //
+/////////////
+
+const shapeProjectResponse = (projectsArray) => {
+   return projectsArray.map((project) => {
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      projectURL: project.projecturl,
+      jobsAvailable: project.jobsavailable,
+      owner: project.owner,
+      technologies: project.technologies,
+      created_at: project.created_at,
+      updated_at: project.updated_at
+    }
+  })
+
 }
