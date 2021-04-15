@@ -7,10 +7,10 @@ const { auth } = require('../middlewares/middleware-auth')
 
 router.route('/register').post(registerUserValidation, createUser)
 router.route('/login').post(loginUser)
-router.get('/', auth, getUserProfile)
-router.delete('/', auth, deleteUser)
-router.patch('/', auth, updateUser)
-router.get('/logout', auth, logout)
-router.get('/logout/all', auth, logoutAll)
+router.route('/').get(auth, getUserProfile)
+router.route('/').delete(auth, deleteUser)
+router.route('/').patch(auth, updateUser)
+router.route('/logout').get(auth, logout)
+router.route('/logout/all').get(auth, logoutAll)
 
 module.exports = router
