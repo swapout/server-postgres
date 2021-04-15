@@ -142,30 +142,28 @@ exports.getAllProjects = async (req, res) => {
   let match = req.query.match
   let positions = req.query.positions
 
-
   try {
     if(technologies) {
-      console.log('technologies not empty')
       technologies = technologies.split(',')
-      // technologies = await pool.query(
-      //   `
-      //     SELECT
-      //     jsonb_agg(
-      //       id
-      //     ) AS technologies
-      //     FROM technologies
-      //     WHERE label = ANY ($1);
-      //    `,
-      //   [technologies]
-      // )
-      // technologies = technologies.rows[0].technologies
-      console.log(technologies)
+      technologies = await pool.query(
+        `
+          SELECT
+          jsonb_agg(
+            id
+          ) AS technologies
+          FROM technologies
+          WHERE label = ANY ($1);
+         `,
+        [technologies]
+      )
+      technologies = technologies.rows[0].technologies
+
     } else {
       technologies = await pool.query(
         `
           SELECT
           jsonb_agg(
-            label
+            id
           ) AS technologies
           FROM technologies
         `
@@ -177,25 +175,25 @@ exports.getAllProjects = async (req, res) => {
     console.log('QUERY: ', req.query)
 
     switch (sort) {
-      case '+name':
+      case 'nameasc':
         sortObj = {
-          sort: 'name',
+          sort: 'p.name',
           direction: 'ASC'
         }
         break
-      case '-name':
+      case 'namedesc':
         sortObj = {
-          sort: 'name',
+          sort: 'p.name',
           direction: 'DESC'
         }
         break
-      case '+date':
+      case 'dateasc':
         sortObj = {
           sort: 'created_at',
           direction: 'ASC'
         }
         break
-      case '-date':
+      case 'datedesc':
         sortObj = {
           sort: 'created_at',
           direction: 'DESC'
@@ -219,15 +217,37 @@ exports.getAllProjects = async (req, res) => {
         positions = [true, false]
     }
 
+
+
     const sql = format(
       `
-        SELECT *
+        SELECT 
+          p.id,
+          p.owner,
+          p.name, 
+          p.description,
+          p.projecturl,
+          p.jobsavailable,
+          p.created_at,
+          p.updated_at,
+          jsonb_agg(
+            jsonb_build_object(
+                'label', pt.label, 
+                'value', pt.value, 
+                'id', pt.technology_id
+            )
+          ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
-        WHERE jobsAvailable IN (%5$L) AND pt.label IN (%6$L)
-        ORDER BY %1$s %2$s
-        OFFSET %3$L
-        LIMIT %4$L;
+        WHERE p.id in (
+          select distinct project_id 
+          from project_tech pt
+          where pt.technology_id in (%6$L))
+          and p.jobsavailable in (%5$L)
+        GROUP BY p.name, p.id
+        order by %1$s %2$s
+        offset %3$L
+        limit %4$L;
         `,
       sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
     )
