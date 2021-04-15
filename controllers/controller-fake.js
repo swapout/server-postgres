@@ -7,6 +7,7 @@ const faker = require('faker')
 const {
   insertUserTech,
   insertUserLang,
+  insertProjectTech,
   fetchUserTech,
   fetchUserLang,
   deleteUserLang,
@@ -18,23 +19,30 @@ exports.fakeUser = async (req, res) => {
   let numberOfFakeUsers = req.body.fake
   const hash = req.body.hash
   const bearer = req.body.bearer
+  const bio = req.body.bio
+  const minDate = req.body.minDate
+  const maxDate = req.body.maxDate
+  const githubURL = req.body.githubURL
+  const gitlabURL = req.body.gitlabURL
+  const bitbucketURL = req.body.bitbucketURL
+  const linkedinURL = req.body.linkedinURL
   let users = []
 
   try {
     while(numberOfFakeUsers > 0) {
       const username = `${faker.internet.userName()}${faker.datatype.number()}`
       const lowerCaseUsername = username.toLowerCase()
-      const randomDate = faker.date.between('2015-01-01', '2021-04-15')
+      const randomDate = faker.date.between(minDate, maxDate)
       let user = {
         avatar: faker.internet.avatar(),
         username: username,
         email: `${lowerCaseUsername}@${faker.internet.domainName()}`,
         password: '12345678a',
-        githubURL: `https://github.com/${lowerCaseUsername}`,
-        gitlabURL: `https://gitlab.com/${lowerCaseUsername}`,
-        bitbucketURL: `https://bitbucket.org/${lowerCaseUsername}/`,
-        linkedinURL: `https://www.linkedin.com/in/${lowerCaseUsername}/`,
-        bio: faker.lorem.paragraph(),
+        githubURL: githubURL ? `https://github.com/${lowerCaseUsername}` : '',
+        gitlabURL: gitlabURL ? `https://gitlab.com/${lowerCaseUsername}` : '',
+        bitbucketURL: bitbucketURL ? `https://bitbucket.org/${lowerCaseUsername}/` : '',
+        linkedinURL: linkedinURL ? `https://www.linkedin.com/in/${lowerCaseUsername}/` : '',
+        bio: bio ? faker.lorem.paragraph() : '',
         created_at: randomDate,
         updated_at: randomDate
       }
@@ -84,6 +92,62 @@ exports.fakeUser = async (req, res) => {
   }
 }
 
+exports.fakeProject = async (req, res) => {
+  let numberOfFakeProjects = req.body.fake
+  const maxTech = req.body.maxTech
+  const minDate = req.body.minDate
+  const maxDate = req.body.maxDate
+  const numberOfWordsInName= req.body.numberOfWordsInName
+  const numberOfWordsInDescription = req.body.numberOfWordsInDescription
+  let projects = []
+
+  try {
+    while(numberOfFakeProjects > 0) {
+      const randomDate = faker.date.between(minDate, maxDate)
+      const randomUser = await getRandomUser()
+      const userId = randomUser.rows[0].id
+      let project = {
+        name: faker.random.words(numberOfWordsInName),
+        description: faker.lorem.words(numberOfWordsInDescription),
+        projectURL: faker.internet.url(),
+        created_at: randomDate,
+        updated_at: randomDate,
+        owner: userId
+      }
+
+      // Save project into DB
+      let savedProject = await pool.query(
+        `
+        INSERT INTO projects (name, description, projectURL, owner, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *;
+      `,
+        [project.name, project.description, project.projectURL, userId, project.created_at, project.updated_at]
+      )
+      const technologies = await getTableSample('technologies', maxTech)
+      savedProject.rows[0].technologies = await insertProjectTech(getLabelArray(technologies.rows), savedProject.rows[0].id, pool)
+      projects.push(savedProject.rows[0])
+      numberOfFakeProjects--
+    }
+
+    return res.status(201).json({
+      status: 201,
+      message: `${projects.length} projects created`,
+      projects
+    })
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
+/////////////
+// HELPERS //
+/////////////
+
 const getTableSample = async (tableName, maxSamples) => {
   let sql = format(
     `
@@ -102,4 +166,13 @@ const getLabelArray = (arr) => {
   return arr.map((el) => {
     return el.label
   })
+}
+
+const getRandomUser = async () => {
+  return pool.query(    `
+      SELECT id 
+      FROM users 
+      ORDER BY random() 
+      LIMIT random() * 1 + 1;
+    `)
 }

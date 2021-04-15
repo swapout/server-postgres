@@ -3,7 +3,7 @@ const express = require('express')
 const {
   createProject,
   getProjectById,
-  // getAllProjects,
+  getAllProjects,
   getProjectsByUser,
   updateProjectById,
   deleteProjectById
@@ -13,7 +13,7 @@ const { auth } = require('../middlewares/middleware-auth')
 const router = express.Router()
 
 router.post('/', auth, createProject)
-// router.get('/', auth, getAllProjects)
+router.get('/', auth, getAllProjects)
 router.get('/user', auth, getProjectsByUser)
 router.get('/:id', auth, getProjectById)
 router.patch('/:id', auth, updateProjectById)

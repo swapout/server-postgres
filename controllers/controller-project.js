@@ -124,7 +124,38 @@ exports.getProjectsByUser = async (req, res) => {
     })
   } catch (error) {
     console.log(error.message)
-    returnres.status(500).json({
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
+exports.getAllProjects = async (req, res) => {
+  try {
+
+    console.log('QUERY: ', req.query)
+
+    const foundProjects = await pool.query(
+      `
+        SELECT *
+        FROM projects
+        ORDER BY name DESC
+        OFFSET 0
+        LIMIT 5
+      `
+    )
+
+    console.log('FOUND PROJECTS: ', foundProjects.rows)
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Get projects were successful',
+      projects: normalizeProject(foundProjects.rows)
+    })
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
       status: 500,
       message: 'Server error'
     })
