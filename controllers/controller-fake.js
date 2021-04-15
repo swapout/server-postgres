@@ -1,5 +1,5 @@
 const { pool } = require('../config/db')
-const format = require('pg-format');
+const format = require('pg-format')
 
 const bcrypt = require('bcryptjs')
 const faker = require('faker')
@@ -22,6 +22,8 @@ exports.fakeUser = async (req, res) => {
   const bio = req.body.bio
   const minDate = req.body.minDate
   const maxDate = req.body.maxDate
+  const maxTech = req.body.maxTech
+  const maxLang = req.body.maxLang
   const githubURL = req.body.githubURL
   const gitlabURL = req.body.gitlabURL
   const bitbucketURL = req.body.bitbucketURL
@@ -62,8 +64,8 @@ exports.fakeUser = async (req, res) => {
 
       createdUser = createdUser.rows[0]
 
-      const technologies = await getTableSample('technologies', 7)
-      const languages = await getTableSample('languages', 4)
+      const technologies = await getTableSample('technologies', maxTech)
+      const languages = await getTableSample('languages', maxLang)
 
       if(bearer) {
         // Create and save bearer_token to DB

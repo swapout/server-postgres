@@ -1,5 +1,6 @@
 const { pool } = require('../config/db')
 const moment = require('moment')
+const format = require('pg-format')
 
 const { insertProjectTech, fetchProjectTech, deleteProjectTech } = require('../helpers/helper-queries')
 
@@ -132,21 +133,35 @@ exports.getProjectsByUser = async (req, res) => {
 }
 
 exports.getAllProjects = async (req, res) => {
+  const page = req.query.page || 1
+  const itemsPerPage = req.query.itemsPerPage || 9999
+  const offset = (page - 1) * itemsPerPage
+  const sort = req.query.sort
+  const order = 'ASC'
+  const technologies = req.query.technologies
+  const match = req.query.match
+  const positions = req.query.positions
+
+
   try {
 
     console.log('QUERY: ', req.query)
 
-    const foundProjects = await pool.query(
+    const sql = format(
       `
         SELECT *
         FROM projects
-        ORDER BY name DESC
-        OFFSET 0
-        LIMIT 5
-      `
+        ORDER BY %1$s %2$s
+        OFFSET %3$L
+        LIMIT %4$L
+        `,
+      sort, order, offset, itemsPerPage
     )
 
-    console.log('FOUND PROJECTS: ', foundProjects.rows)
+    console.log(sql)
+    const foundProjects = await pool.query(sql)
+
+    // console.log('FOUND PROJECTS: ', foundProjects.rows)
 
     return res.status(200).json({
       status: 200,
