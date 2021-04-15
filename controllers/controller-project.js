@@ -137,25 +137,99 @@ exports.getAllProjects = async (req, res) => {
   const itemsPerPage = req.query.itemsPerPage || 9999
   const offset = (page - 1) * itemsPerPage
   const sort = req.query.sort
-  const order = 'ASC'
-  const technologies = req.query.technologies
-  const match = req.query.match
-  const positions = req.query.positions
+  let sortObj = {}
+  let technologies = req.query.technologies
+  let match = req.query.match
+  let positions = req.query.positions
 
 
   try {
+    if(technologies) {
+      console.log('technologies not empty')
+      technologies = technologies.split(',')
+      // technologies = await pool.query(
+      //   `
+      //     SELECT
+      //     jsonb_agg(
+      //       id
+      //     ) AS technologies
+      //     FROM technologies
+      //     WHERE label = ANY ($1);
+      //    `,
+      //   [technologies]
+      // )
+      // technologies = technologies.rows[0].technologies
+      console.log(technologies)
+    } else {
+      technologies = await pool.query(
+        `
+          SELECT
+          jsonb_agg(
+            label
+          ) AS technologies
+          FROM technologies
+        `
+      )
+      technologies = technologies.rows[0].technologies
+      console.log(technologies)
+    }
 
     console.log('QUERY: ', req.query)
+
+    switch (sort) {
+      case '+name':
+        sortObj = {
+          sort: 'name',
+          direction: 'ASC'
+        }
+        break
+      case '-name':
+        sortObj = {
+          sort: 'name',
+          direction: 'DESC'
+        }
+        break
+      case '+date':
+        sortObj = {
+          sort: 'created_at',
+          direction: 'ASC'
+        }
+        break
+      case '-date':
+        sortObj = {
+          sort: 'created_at',
+          direction: 'DESC'
+        }
+        break
+      default:
+        sortObj = {
+          sort: 'created_at',
+          direction: 'DESC'
+        }
+    }
+
+    switch (positions) {
+      case 'true':
+        positions = [true]
+        break
+      case 'false':
+        positions = [false]
+        break
+      default:
+        positions = [true, false]
+    }
 
     const sql = format(
       `
         SELECT *
-        FROM projects
+        FROM projects AS p
+        JOIN project_tech AS pt ON pt.project_id = p.id
+        WHERE jobsAvailable IN (%5$L) AND pt.label IN (%6$L)
         ORDER BY %1$s %2$s
         OFFSET %3$L
-        LIMIT %4$L
+        LIMIT %4$L;
         `,
-      sort, order, offset, itemsPerPage
+      sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
     )
 
     console.log(sql)
