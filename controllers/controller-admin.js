@@ -11,9 +11,6 @@ exports.createTables = async (req, res) => {
   try {
     await client.query(
       `
-        DROP VIEW user_lang;
-        DROP VIEW user_tech;
-        DROP VIEW project_tech;
         DROP TABLE positions_technologies_relations;
         DROP TABLE projects_positions_relations;
         DROP TABLE users_technologies_relations;

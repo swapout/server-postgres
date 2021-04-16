@@ -8,10 +8,13 @@ const {
   insertUserTech,
   insertUserLang,
   insertProjectTech,
+  insertPositionTech,
+  fetchPositionTech,
   fetchUserTech,
   fetchUserLang,
   deleteUserLang,
-  deleteUserTech
+  deleteUserTech,
+  deletePositionTech
 } = require('../helpers/helper-queries')
 const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
@@ -146,6 +149,62 @@ exports.fakeProject = async (req, res) => {
   }
 }
 
+exports.fakePosition = async (req, res) => {
+  let numberOfFakePositions = req.body.fake
+  const maxTech = req.body.maxTech
+  const minDate = req.body.minDate
+  const maxDate = req.body.maxDate
+  const minNumPos = req.body.minNumPos
+  const maxNumPos = req.body.maxNumPos
+  const numberOfWordsInTitle= req.body.numberOfWordsInTitle
+  const numberOfWordsInDescription = req.body.numberOfWordsInDescription
+  let positions = []
+  try {
+    while(numberOfFakePositions > 0) {
+      const randomDate = faker.date.between(minDate, maxDate)
+      const randomProject = await getRandomProject()
+      const projectId = randomProject.rows[0].id
+      const projectOwner = randomProject.rows[0].owner
+
+      let position = {
+        title: faker.random.words(numberOfWordsInTitle),
+        description: faker.lorem.words(numberOfWordsInDescription),
+        numberOfPositions: faker.datatype.number({min: minNumPos, max: maxNumPos, precision: 1}),
+        projectId: projectId,
+        userId: projectOwner,
+        createdAt: randomDate,
+        updatedAt: randomDate
+      }
+
+      const savedPosition = await pool.query(
+        `
+          INSERT INTO positions (title, description, number_of_positions, project_id, user_id, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *;
+        `,
+        [position.title, position.description, position.numberOfPositions, position.projectId, position.userId, position.createdAt, position.updatedAt]
+      )
+      console.log(savedPosition.rows[0])
+      const technologies = await getTableSample('technologies', maxTech)
+      savedPosition.rows[0].technologies = await insertPositionTech(getLabelArray(technologies.rows), savedPosition.rows[0].id, pool)
+      positions.push(savedPosition.rows[0])
+      numberOfFakePositions--
+    }
+
+    return res.status(201).json({
+      status: 201,
+      message: `${positions.length} projects created`,
+      positions
+    })
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
 /////////////
 // HELPERS //
 /////////////
@@ -174,6 +233,15 @@ const getRandomUser = async () => {
   return pool.query(    `
       SELECT id 
       FROM users 
+      ORDER BY random() 
+      LIMIT random() * 1 + 1;
+    `)
+}
+
+const getRandomProject = async () => {
+  return pool.query(    `
+      SELECT id, owner
+      FROM projects 
       ORDER BY random() 
       LIMIT random() * 1 + 1;
     `)

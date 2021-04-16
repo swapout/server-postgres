@@ -51,6 +51,16 @@ exports.createPosition = async (req, res) => {
       [position.title, position.description, position.project, position.numberOfPositions, userId]
     )
 
+    await client.query(
+      `
+        UPDATE projects
+        SET jobsAvailable = true
+        WHERE id = $1
+        RETURNING *;
+      `,
+      [position.project]
+    )
+
     // Add technologies to position
     savedPosition.rows[0].technologies = await insertPositionTech(position.technologies, savedPosition.rows[0].id, client)
 
@@ -74,12 +84,47 @@ exports.createPosition = async (req, res) => {
 }
 
 exports.getPositionById = async (req, res) => {
+  // Get project ID
+  const positionId = req.params.id
   try {
+    // Get project by ID and join it with tech
+    const foundPosition = await pool.query(
+      `
+        SELECT 
+          p.id,
+          p.title, 
+          p.description,
+          p.number_of_positions,
+          p.project_id,
+          p.user_id,
+          p.created_at,
+          p.updated_at,
+          jsonb_agg(
+            jsonb_build_object(
+              'label', pt.label, 
+              'value', pt.value, 
+              'id', pt.technology_id
+            )
+          ) AS technologies
+        FROM position_tech AS pt
+        JOIN positions AS p ON p.id = pt.position_id
+        WHERE p.id = $1
+        GROUP BY p.title, p.id;
+      `,
+      [positionId]
+    )
+    // If no positions found
+    if(foundPosition.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'No positions found with this ID'
+      })
+    }
 
     return res.status(200).json({
       status: 200,
       message: 'Position found',
-      // position
+      position: normalizePosition(foundPosition.rows)
     })
   } catch (error) {
     console.log(error)
