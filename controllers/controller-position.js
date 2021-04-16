@@ -205,19 +205,73 @@ exports.getAllPositions = async (req, res) => {
 }
 
 exports.updatePositionById = async (req, res) => {
+  // Create DB connection pool and start transaction
+  const client = await pool.connect()
+  await client.query('BEGIN')
+  // Get position ID
+  const positionId = req.params.id
+  // Get user ID from token
+  const userId = req.body.decoded.id
+  // Prepare position for update
+  const position = {
+    title: req.body.position.title,
+    description: req.body.position.description,
+    numberOfPositions: req.body.position.numberOfPositions,
+    projectId: req.body.position.projectId,
+    technologies: req.body.position.technologies,
+    updatedAt: moment()
+  }
+
+  const foundProject = await client.query(
+    `
+      SELECT id
+      FROM projects
+      WHERE id = $1 AND owner = $2
+    `,
+    [position.projectId, userId]
+  )
+
+  if (foundProject.rows.length === 0) {
+    return res.status(403).json({
+      status: 403,
+      message: 'You are not authorized to edit this project'
+    })
+  }
+
   try {
+    const updatedPosition = await client.query(
+      `
+        UPDATE positions
+        SET title = $1, 
+            description = $2, 
+            number_of_positions = $3, 
+            updated_at = $4
+        WHERE id = $5 AND user_id = $6
+        RETURNING id, title, description, number_of_positions, project_id, user_id, created_at, updated_at
+      `,
+      [position.title, position.description, position.numberOfPositions, position.updatedAt, positionId, userId]
+    )
+
+    await deletePositionTech(updatedPosition.rows[0].id, client)
+    updatedPosition.rows[0].technologies = await insertPositionTech(position.technologies, updatedPosition.rows[0].id, client)
+
+    console.log(updatedPosition.rows[0])
+    await client.query('COMMIT')
 
     return res.status(200).json({
       status: 200,
       message: 'Successfully updated position',
-      // position: updatedPosition
+      position: normalizePosition(updatedPosition.rows)
     })
   } catch (error) {
+    await client.query('ROLLBACK')
     console.log(error)
     return res.status(500).json({
       status: 500,
       message: error.message
     })
+  } finally {
+    client.release()
   }
 }
 
