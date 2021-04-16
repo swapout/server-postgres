@@ -255,9 +255,7 @@ exports.updatePositionById = async (req, res) => {
     await deletePositionTech(updatedPosition.rows[0].id, client)
     updatedPosition.rows[0].technologies = await insertPositionTech(position.technologies, updatedPosition.rows[0].id, client)
 
-    console.log(updatedPosition.rows[0])
     await client.query('COMMIT')
-
     return res.status(200).json({
       status: 200,
       message: 'Successfully updated position',
@@ -276,12 +274,31 @@ exports.updatePositionById = async (req, res) => {
 }
 
 exports.deletePositionById = async (req, res) => {
+  // Get position ID from the query string
+  const positionId = req.params.id
+  // Get the user ID from the token
+  const userId = req.body.decoded.id
   try {
+    // Delete position where user is owner of the position
+    const deletedPosition = await pool.query(
+      `
+        DELETE FROM positions
+        WHERE id = $1 AND user_id = $2
+        RETURNING *;
+      `,
+      [positionId, userId]
+    )
+
+    if(deletedPosition.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Something went wrong',
+      })
+    }
 
     return res.status(200).json({
       status: 200,
       message: 'Successfully deleted position',
-      // position: updatedPosition
     })
   } catch (error) {
     console.log(error)
