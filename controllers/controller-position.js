@@ -136,12 +136,47 @@ exports.getPositionById = async (req, res) => {
 }
 
 exports.getPositionsByProject = async (req, res) => {
+  const projectId = req.params.id
   try {
+
+    const foundPositions = await pool.query(
+      `
+        SELECT p.id,
+               p.title,
+               p.description,
+               p.number_of_positions,
+               p.project_id,
+               p.user_id,
+               p.created_at,
+               p.updated_at,
+               jsonb_agg(
+                  jsonb_build_object(
+                    'label', pt.label, 
+                    'value', pt.value, 
+                    'id', pt.technology_id
+                  )
+                ) AS technologies
+        FROM positions p
+        JOIN position_tech AS pt ON pt.position_id = p.id
+        WHERE p.project_id = $1
+        GROUP BY p.title, p.id
+        ORDER BY title ASC;
+      `,
+      [projectId]
+    )
+
+    if(foundPositions.rows.length === 0) {
+      return res.status(200).json({
+        status: 200,
+        message: 'This project doesn\'t have positions',
+        positions: foundPositions.rows
+      })
+    }
 
     return res.status(200).json({
       status: 200,
       message: 'Get positions by project ID were successful',
-      // positions: positionsByProject
+      positions: foundPositions.rows
     })
   } catch (error) {
     console.log(error)
