@@ -252,10 +252,8 @@ exports.getAllProjects = async (req, res) => {
       sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
     )
 
-    console.log(sql)
+    // console.log(sql)
     const foundProjects = await pool.query(sql)
-
-    // console.log('FOUND PROJECTS: ', foundProjects.rows)
 
     return res.status(200).json({
       status: 200,

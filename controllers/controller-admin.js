@@ -11,19 +11,22 @@ exports.createTables = async (req, res) => {
   try {
     await client.query(
       `
-        DROP TABLE users_languages_relations;
-        DROP TABLE users_technologies_relations;
-        DROP TABLE projects_technologies_relations;
-        DROP TABLE projects_positions_relations;
+        DROP VIEW user_lang;
+        DROP VIEW user_tech;
+        DROP VIEW project_tech;
         DROP TABLE positions_technologies_relations;
+        DROP TABLE projects_positions_relations;
+        DROP TABLE users_technologies_relations;
+        DROP TABLE users_languages_relations;
+        DROP TABLE projects_technologies_relations;
         DROP TABLE positions;
         DROP TABLE collaborators;
         DROP TABLE projects;
+        DROP TABLE technologies;
         DROP TABLE bearer_tokens;
         DROP TABLE reset_password_tokens;
-        DROP TABLE languages;
         DROP TABLE users;
-        DROP TABLE technologies;
+        DROP TABLE languages;
       `
     )
 
@@ -48,18 +51,18 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS bearer_tokens (
         id SERIAL PRIMARY KEY,
         bearer_token TEXT NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
     )
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS reset_password_tokens (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         token TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
     )
 
@@ -70,9 +73,9 @@ exports.createTables = async (req, res) => {
         description TEXT NOT NULL,
         projectURL VARCHAR(255),
         jobsAvailable BOOLEAN DEFAULT FALSE,
+        owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
     )
 
@@ -80,10 +83,10 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS collaborators (
         id SERIAL PRIMARY KEY,
         position VARCHAR(128),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
     )
 
@@ -92,10 +95,11 @@ exports.createTables = async (req, res) => {
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        number_of_positions INTEGER default 1,
         project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
     )
 
@@ -290,13 +294,7 @@ exports.createViews = async (req, res) => {
   await client.query('BEGIN')
 
   try {
-    await client.query(
-      `
-        DROP VIEW user_lang;
-        DROP VIEW user_tech;
-        DROP VIEW project_tech;
-      `
-    )
+
     await client.query(
       `
         CREATE VIEW user_lang AS
@@ -323,6 +321,16 @@ exports.createViews = async (req, res) => {
           FROM projects_technologies_relations AS ptr
           JOIN technologies AS t ON t.id = ptr.technology_id
           JOIN projects AS p ON p.id = ptr.project_id;
+      `
+    )
+
+    await client.query(
+      `
+        CREATE VIEW position_tech AS
+          SELECT label, value, t.id AS technology_id, p.id AS position_id 
+          FROM positions_technologies_relations AS ptr
+          JOIN technologies AS t ON t.id = ptr.technology_id
+          JOIN positions AS p ON p.id = ptr.position_id;
       `
     )
     await client.query('COMMIT')

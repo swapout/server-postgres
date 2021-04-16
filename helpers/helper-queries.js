@@ -175,7 +175,7 @@ exports.fetchProjectTech = async (projectId) => {
     )
     return tech.rows
   } catch (error) {
-    console.log('fetchUserTech error: ', error.message)
+    console.log('fetchProjectTech error: ', error.message)
   }
 }
 
@@ -188,6 +188,71 @@ exports.deleteProjectTech = async (projectId, client) => {
       `, [projectId]
     )
   } catch (error) {
-    console.log('deleteUserTech error: ', error.message)
+    console.log('deleteProjectTech error: ', error.message)
+  }
+}
+
+//////////////////////
+// POSITION HELPERS //
+/////////////////////
+
+exports.insertPositionTech = async (technologiesArray, positionId, client) => {
+  try {
+    // Gets technologies corresponding of the array of project technologies
+    const technologies = await client.query(
+      `
+        SELECT id, label, value 
+        FROM technologies 
+        WHERE label = ANY ($1);
+      `,
+      [technologiesArray]
+    )
+
+    // Assigns technology array to project technologies for the response
+    const techIdArray = []
+    technologies.rows.map((tech) => {
+      techIdArray.push([positionId, tech.id])
+    })
+
+    // Inserts projects_technologies_relations to table
+    const sqlTech = format(
+      `
+        INSERT INTO positions_technologies_relations (position_id, technology_id)
+        VALUES %L;
+      `,
+      techIdArray
+    )
+    await client.query(sqlTech)
+    return technologies.rows
+  } catch (error) {
+    console.log('insertPositionTech error: ', error.message)
+  }
+}
+
+exports.fetchPositionTech = async (positionId) => {
+  try {
+    const tech = await pool.query(
+      `
+        SELECT label, value, technology_id AS id
+        FROM position_tech AS pt
+        WHERE position_id = $1;
+      `, [positionId]
+    )
+    return tech.rows
+  } catch (error) {
+    console.log('fetchPositionTech error: ', error.message)
+  }
+}
+
+exports.deletePositionTech = async (positionId, client) => {
+  try {
+    await client.query(
+      `
+        DELETE FROM positions_technologies_relations
+        WHERE position_id = $1;
+      `, [positionId]
+    )
+  } catch (error) {
+    console.log('deletePositionTech error: ', error.message)
   }
 }
