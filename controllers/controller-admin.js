@@ -9,23 +9,23 @@ exports.createTables = async (req, res) => {
   const client = await pool.connect()
   await client.query('BEGIN')
   try {
-    await client.query(
-      `
-        DROP TABLE positions_technologies_relations;
-        DROP TABLE projects_positions_relations;
-        DROP TABLE users_technologies_relations;
-        DROP TABLE users_languages_relations;
-        DROP TABLE projects_technologies_relations;
-        DROP TABLE positions;
-        DROP TABLE collaborators;
-        DROP TABLE projects;
-        DROP TABLE technologies;
-        DROP TABLE bearer_tokens;
-        DROP TABLE reset_password_tokens;
-        DROP TABLE users;
-        DROP TABLE languages;
-      `
-    )
+    // await client.query(
+    //   `
+    //     DROP TABLE positions_technologies_relations;
+    //     DROP TABLE projects_positions_relations;
+    //     DROP TABLE users_technologies_relations;
+    //     DROP TABLE users_languages_relations;
+    //     DROP TABLE projects_technologies_relations;
+    //     DROP TABLE positions;
+    //     DROP TABLE collaborators;
+    //     DROP TABLE projects;
+    //     DROP TABLE technologies;
+    //     DROP TABLE bearer_tokens;
+    //     DROP TABLE reset_password_tokens;
+    //     DROP TABLE users;
+    //     DROP TABLE languages;
+    //   `
+    // )
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS users (
