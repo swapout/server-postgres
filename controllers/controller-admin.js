@@ -3,29 +3,35 @@ const format = require('pg-format');
 
 const technologies = require('../data/technologies')
 const languages = require('../data/languages')
+const roles = require('../data/roles')
 
 exports.createTables = async (req, res) => {
 
   const client = await pool.connect()
   await client.query('BEGIN')
   try {
-    // await client.query(
-    //   `
-    //     DROP TABLE positions_technologies_relations;
-    //     DROP TABLE projects_positions_relations;
-    //     DROP TABLE users_technologies_relations;
-    //     DROP TABLE users_languages_relations;
-    //     DROP TABLE projects_technologies_relations;
-    //     DROP TABLE positions;
-    //     DROP TABLE collaborators;
-    //     DROP TABLE projects;
-    //     DROP TABLE technologies;
-    //     DROP TABLE bearer_tokens;
-    //     DROP TABLE reset_password_tokens;
-    //     DROP TABLE users;
-    //     DROP TABLE languages;
-    //   `
-    // )
+    await client.query(
+      `
+        DROP VIEW user_lang;
+        DROP VIEW user_tech;
+        DROP VIEW project_tech;
+        DROP VIEW position_tech;
+        DROP TABLE positions_technologies_relations;
+        DROP TABLE positions_applications_relations;
+        DROP TABLE users_technologies_relations;
+        DROP TABLE users_languages_relations;
+        DROP TABLE projects_technologies_relations;
+        DROP TABLE positions;
+        DROP TABLE collaborators;
+        DROP TABLE projects;
+        DROP TABLE technologies;
+        DROP TABLE roles;
+        DROP TABLE bearer_tokens;
+        DROP TABLE reset_password_tokens;
+        DROP TABLE users;
+        DROP TABLE languages;
+      `
+    )
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS users (
@@ -123,6 +129,17 @@ exports.createTables = async (req, res) => {
     )
 
     await client.query(
+      `CREATE TABLE IF NOT EXISTS roles (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(100) NOT NULL UNIQUE,
+        value VARCHAR(100) NOT NULL UNIQUE,
+        status INTEGER DEFAULT 1,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`
+    )
+
+    await client.query(
       `CREATE TABLE IF NOT EXISTS positions_technologies_relations (
         id SERIAL PRIMARY KEY,
         position_id INTEGER NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
@@ -133,10 +150,11 @@ exports.createTables = async (req, res) => {
     )
 
     await client.query(
-      `CREATE TABLE IF NOT EXISTS projects_positions_relations (
+      `CREATE TABLE IF NOT EXISTS positions_applications_relations (
         id SERIAL PRIMARY KEY,
-        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         position_id INTEGER NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
+        status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
@@ -191,7 +209,7 @@ exports.clearAllTables = async (req, res) => {
       `DELETE FROM users_languages_relations;
        DELETE FROM users_technologies_relations;
        DELETE FROM projects_technologies_relations;
-       DELETE FROM projects_positions_relations;
+       DELETE FROM positions_applications_relations;
        DELETE FROM positions_technologies_relations;
        DELETE FROM positions;
        DELETE FROM collaborators;
@@ -273,6 +291,39 @@ exports.addLanguages = async (req, res) => {
     await client.query('COMMIT')
 
     return res.send('Languages were added')
+
+  } catch (error) {
+    await client.query('ROLLBACK')
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  } finally {
+    client.release()
+  }
+}
+
+exports.addRoles = async (req, res) => {
+  const client = await pool.connect()
+  await client.query('BEGIN')
+
+  try {
+    const updatedRoles = roles.map((role) => {
+      return [role.label, role.value]
+    })
+
+    const sql = format(`
+      INSERT INTO roles (label, value)
+      VALUES %L;
+      `,
+      updatedRoles
+    )
+
+    await client.query(sql)
+    await client.query('COMMIT')
+
+    return res.send('Roles were added')
 
   } catch (error) {
     await client.query('ROLLBACK')
