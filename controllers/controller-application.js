@@ -66,11 +66,12 @@ exports.getApplicationsByPosition = async (req, res) => {
     // Get all applications for a position
     const foundApplications = await pool.query(
       `
-        select u.avatar, u.username, u.bio, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl 
+        select u.avatar, u.username, u.bio, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl
         from positions_applications_relations par 
         join positions p on par.position_id = p.id
-        join users u on u.id = p.user_id 
+        join users u on u.id = par.user_id 
         where par.position_id = $1 and p.user_id = $2 and par.status = $3
+        order by par.created_at asc;
       `,
       [positionId, userId, status]
     )

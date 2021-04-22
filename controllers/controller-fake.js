@@ -1,5 +1,6 @@
 const { pool } = require('../config/db')
 const format = require('pg-format')
+const moment = require('moment')
 
 const bcrypt = require('bcryptjs')
 const faker = require('faker')
@@ -212,7 +213,7 @@ exports.fakeApplication = async (req, res) => {
       const randomPosition = await getRandomPosition()
       const positionId = randomPosition.rows[0].id
       const projectOwner = randomPosition.rows[0].user_id
-      const randomDate = faker.date.between(randomPosition.rows[0].created_at, maxDate)
+      const randomDate = faker.date.between(moment(randomPosition.rows[0].created_at), maxDate)
       const randomUser = await getRandomUser()
       console.log(randomUser.rows[0].id)
       console.log(projectOwner)
