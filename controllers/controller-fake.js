@@ -205,6 +205,60 @@ exports.fakePosition = async (req, res) => {
   }
 }
 
+exports.fakeApplication = async (req, res) => {
+  let numberOfFakeApplications = req.body.fake
+  const minDate = req.body.minDate
+  const maxDate = req.body.maxDate
+  let applications = []
+  try {
+    while(numberOfFakeApplications > 0) {
+      const randomDate = faker.date.between(minDate, maxDate)
+      const randomPosition = await getRandomPosition()
+      const positionId = randomPosition.rows[0].id
+      const projectOwner = randomPosition.rows[0].user_id
+      const randomUser = await getRandomUser()
+      console.log(randomUser.rows[0].id)
+      console.log(projectOwner)
+      if(randomUser.rows[0].id !== projectOwner) {
+        const isExistingApplication = await pool.query(
+          `
+          select *
+          from positions_applications_relations
+          where user_id = $1 and position_id = $2;
+        `,
+          [randomUser.rows[0].id, positionId]
+        )
+
+        if(isExistingApplication.rows.length === 0) {
+          const savedApplication = await pool.query(
+            `
+              INSERT INTO positions_applications_relations (user_id, position_id, created_at, updated_at)
+              VALUES ($1, $2, $3, $4)
+              RETURNING *;
+            `,
+            [randomUser.rows[0].id, positionId, randomDate, randomDate]
+          )
+
+          applications.push(savedApplication.rows[0])
+          numberOfFakeApplications--
+        }
+      }
+    }
+
+    return res.status(201).json({
+      status: 201,
+      count: applications.length,
+      applications
+    })
+  } catch (error) {
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
 /////////////
 // HELPERS //
 /////////////
@@ -242,6 +296,15 @@ const getRandomProject = async () => {
   return pool.query(    `
       SELECT id, owner
       FROM projects 
+      ORDER BY random() 
+      LIMIT random() * 1 + 1;
+    `)
+}
+
+const getRandomPosition = async () => {
+  return pool.query(    `
+      SELECT id, user_id, project_id
+      FROM positions 
       ORDER BY random() 
       LIMIT random() * 1 + 1;
     `)

@@ -6,6 +6,7 @@ exports.createApplication = async (req, res) => {
   const client = await pool.connect()
   await client.query('BEGIN')
 
+  // Get user and position ID
   const userId = req.body.decoded.id
   const positionId = req.body.position
   try {
@@ -21,6 +22,7 @@ exports.createApplication = async (req, res) => {
       [positionId, userId]
     )
 
+    // If no item found
     if(isPositionOwner.rows.length === 0) {
       return res.status(422).json({
         status: 422,
@@ -28,6 +30,7 @@ exports.createApplication = async (req, res) => {
       })
     }
 
+    // Add application to table
     await client.query(
       `
         INSERT INTO positions_applications_relations (user_id, position_id)
@@ -54,13 +57,13 @@ exports.createApplication = async (req, res) => {
 }
 
 exports.getApplicationsByPosition = async (req, res) => {
+  // Get necessary info to get the applications
   const status = req.query.status
   const positionId = req.params.position
   const userId = req.body.decoded.id
-  console.log(status)
-  console.log(positionId)
-  console.log(userId)
+
   try {
+    // Get all applications for a position
     const foundApplications = await pool.query(
       `
         select u.avatar, u.username, u.bio, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl 
@@ -72,13 +75,14 @@ exports.getApplicationsByPosition = async (req, res) => {
       [positionId, userId, status]
     )
 
-    console.log(foundApplications.rows)
+    // If no applications found
     if (foundApplications.rows.length === 0) {
       return res.status(404).json({
         status: 404,
-        message: 'You are either not the project owner or there ar no applications found'
+        message: 'You are either not the project owner or there are no applications found'
       })
     }
+
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved applicants by position',
