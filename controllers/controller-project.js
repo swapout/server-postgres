@@ -153,18 +153,35 @@ exports.getAllProjects = async (req, res) => {
   try {
     if(technologies) {
       technologies = technologies.split(',')
-      technologies = await pool.query(
-        `
-          SELECT
-          jsonb_agg(
-            id
-          ) AS technologies
-          FROM technologies
-          WHERE label = ANY ($1);
-         `,
-        [technologies]
-      )
-      technologies = technologies.rows[0].technologies
+      if(match === 'any') {
+        technologies = await pool.query(
+          `
+            SELECT
+            jsonb_agg(
+              id
+            ) AS technologies
+            FROM technologies
+            WHERE label = ANY ($1);
+           `,
+          [technologies]
+        )
+        technologies = technologies.rows[0].technologies
+      } else if (match === 'all') {
+        technologies = await pool.query(
+          `
+            SELECT ARRAY(SELECT
+              pt2.project_id
+            FROM project_tech pt2 
+            JOIN (SELECT array_agg(label)::text[] AS tech_array, project_id
+            FROM project_tech pt
+            GROUP BY project_id) AS ta on ta.tech_array @> ($1)::text[]
+            WHERE pt2.project_id = ta.project_id
+            GROUP BY pt2.project_id) AS technologies;
+          `,
+          [technologies]
+        )
+        technologies = technologies.rows[0].technologies
+      }
 
     } else {
       technologies = await pool.query(
@@ -177,10 +194,7 @@ exports.getAllProjects = async (req, res) => {
         `
       )
       technologies = technologies.rows[0].technologies
-      console.log(technologies)
     }
-
-    console.log('QUERY: ', req.query)
 
     switch (sort) {
       case 'nameasc':
@@ -225,10 +239,10 @@ exports.getAllProjects = async (req, res) => {
         positions = [true, false]
     }
 
-
-
-    const sql = format(
-      `
+    let sql
+    if (match !== 'all') {
+       sql = format(
+        `
         SELECT 
           p.id,
           p.owner,
@@ -257,8 +271,43 @@ exports.getAllProjects = async (req, res) => {
         offset %3$L
         limit %4$L;
         `,
-      sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
-    )
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
+      )
+    } else {
+      sql = format(
+        `
+        SELECT 
+          p.id,
+          p.owner,
+          p.name, 
+          p.description,
+          p.projecturl,
+          p.jobsavailable,
+          p.created_at,
+          p.updated_at,
+          jsonb_agg(
+            jsonb_build_object(
+                'label', pt.label, 
+                'value', pt.value, 
+                'id', pt.technology_id
+            )
+          ) AS technologies
+        FROM projects AS p
+        JOIN project_tech AS pt ON pt.project_id = p.id
+        WHERE p.id in (
+          select distinct project_id 
+          from project_tech pt
+          where pt.project_id in (%6$L))
+          and p.jobsavailable in (%5$L)
+        GROUP BY p.name, p.id
+        order by %1$s %2$s
+        offset %3$L
+        limit %4$L;
+        `,
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
+      )
+    }
+
 
     // console.log(sql)
     const foundProjects = await pool.query(sql)
