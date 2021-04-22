@@ -100,7 +100,6 @@ exports.fakeUser = async (req, res) => {
 exports.fakeProject = async (req, res) => {
   let numberOfFakeProjects = req.body.fake
   const maxTech = req.body.maxTech
-  const minDate = req.body.minDate
   const maxDate = req.body.maxDate
   const numberOfWordsInName= req.body.numberOfWordsInName
   const numberOfWordsInDescription = req.body.numberOfWordsInDescription
@@ -108,9 +107,9 @@ exports.fakeProject = async (req, res) => {
 
   try {
     while(numberOfFakeProjects > 0) {
-      const randomDate = faker.date.between(minDate, maxDate)
       const randomUser = await getRandomUser()
       const userId = randomUser.rows[0].id
+      const randomDate = faker.date.between(randomUser.rows[0].created_at, maxDate)
       let project = {
         name: faker.random.words(numberOfWordsInName),
         description: faker.lorem.words(numberOfWordsInDescription),
@@ -152,7 +151,6 @@ exports.fakeProject = async (req, res) => {
 exports.fakePosition = async (req, res) => {
   let numberOfFakePositions = req.body.fake
   const maxTech = req.body.maxTech
-  const minDate = req.body.minDate
   const maxDate = req.body.maxDate
   const minNumPos = req.body.minNumPos
   const maxNumPos = req.body.maxNumPos
@@ -161,10 +159,10 @@ exports.fakePosition = async (req, res) => {
   let positions = []
   try {
     while(numberOfFakePositions > 0) {
-      const randomDate = faker.date.between(minDate, maxDate)
       const randomProject = await getRandomProject()
       const projectId = randomProject.rows[0].id
       const projectOwner = randomProject.rows[0].owner
+      const randomDate = faker.date.between(randomProject.rows[0].created_at, maxDate)
 
       let position = {
         title: faker.random.words(numberOfWordsInTitle),
@@ -207,15 +205,14 @@ exports.fakePosition = async (req, res) => {
 
 exports.fakeApplication = async (req, res) => {
   let numberOfFakeApplications = req.body.fake
-  const minDate = req.body.minDate
   const maxDate = req.body.maxDate
   let applications = []
   try {
     while(numberOfFakeApplications > 0) {
-      const randomDate = faker.date.between(minDate, maxDate)
       const randomPosition = await getRandomPosition()
       const positionId = randomPosition.rows[0].id
       const projectOwner = randomPosition.rows[0].user_id
+      const randomDate = faker.date.between(randomPosition.rows[0].created_at, maxDate)
       const randomUser = await getRandomUser()
       console.log(randomUser.rows[0].id)
       console.log(projectOwner)
