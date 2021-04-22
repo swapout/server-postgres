@@ -156,7 +156,8 @@ exports.createTables = async (req, res) => {
         position_id INTEGER NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
         status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, position_id)
       );`
     )
 

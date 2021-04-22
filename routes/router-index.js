@@ -7,6 +7,7 @@ const technologyRoutes = require('../routes/router-technology')
 const languageRoutes = require('../routes/router-language')
 const projectRoutes = require('../routes/router-project')
 const positionRoutes = require('../routes/router-position')
+const applicationRoutes = require('../routes/router-application')
 const fakeRoutes = require('../routes/router-fake')
 
 router.use('/user', userRoutes)
@@ -14,6 +15,7 @@ router.use('/project', projectRoutes)
 router.use('/position', positionRoutes)
 router.use('/technology', technologyRoutes)
 router.use('/language', languageRoutes)
+router.use('/application', applicationRoutes)
 
 
 if(process.env.NODE_ENV === 'dev') {
