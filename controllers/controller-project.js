@@ -147,7 +147,7 @@ exports.getAllProjects = async (req, res) => {
   const sort = req.query.sort
   let sortObj = {}
   let technologies = req.query.technologies
-  let match = req.query.match
+  let match = req.query.match || 'any'
   let positions = req.query.positions
 
   try {
@@ -180,6 +180,13 @@ exports.getAllProjects = async (req, res) => {
           `,
           [technologies]
         )
+        if(technologies.rows[0].technologies.length === 0) {
+          return res.status(200).json({
+            status: 200,
+            message: 'Get projects were successful',
+            projects: []
+          })
+        }
         technologies = technologies.rows[0].technologies
       }
 
