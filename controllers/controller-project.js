@@ -149,6 +149,7 @@ exports.getAllProjects = async (req, res) => {
   let technologies = req.query.technologies
   let match = req.query.match || 'any'
   let positions = req.query.positions
+  let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
 
   try {
     if(technologies) {
@@ -273,12 +274,13 @@ exports.getAllProjects = async (req, res) => {
           from project_tech pt
           where pt.technology_id in (%6$L))
           and p.jobsavailable in (%5$L)
+          and p.name ilike %7$L
         GROUP BY p.name, p.id
         order by %1$s %2$s
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery
       )
     } else {
       sql = format(
@@ -306,12 +308,13 @@ exports.getAllProjects = async (req, res) => {
           from project_tech pt
           where pt.project_id in (%6$L))
           and p.jobsavailable in (%5$L)
+          and p.name ilike %7$L
         GROUP BY p.name, p.id
         order by %1$s %2$s
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery
       )
     }
 
@@ -440,7 +443,7 @@ exports.deleteProjectById = async (req, res) => {
 const normalizeProject = (projectsArray) => {
   if(projectsArray.length === 1) {
     const project = projectsArray[0]
-    return {
+    return [{
       id: project.id,
       name: project.name,
       description: project.description,
@@ -450,7 +453,7 @@ const normalizeProject = (projectsArray) => {
       technologies: project.technologies,
       createdAt: project.created_at,
       updatedAt: project.updated_at
-    }
+    }]
   }
 
    return projectsArray.map((project) => {
