@@ -318,7 +318,6 @@ exports.getAllProjects = async (req, res) => {
       )
     }
 
-
     // console.log(sql)
     const foundProjects = await pool.query(sql)
 

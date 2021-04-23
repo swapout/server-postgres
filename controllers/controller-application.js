@@ -144,6 +144,35 @@ exports.acceptApplication = async (req, res) => {
       [position.rows[0].title, applicant, position.rows[0].project_id]
     )
 
+    await pool.query(
+      `
+        update positions_applications_relations
+        set status = 'accepted'
+        where user_id = $1 and position_id = $2;
+      `,
+      [applicant, positionId]
+    )
+
+    const isRecruiting = await pool.query(
+      `
+        select id
+        from positions p 
+        where project_id = 1 and number_of_positions > 1;
+      `,
+      [position.rows[0].project_id]
+    )
+
+    if(isRecruiting.rows.length === 0) {
+      await pool.query(
+        `
+        update projects
+        set jobs_available = false
+        where id = $1
+        `,
+        [position.rows[0].project_id]
+      )
+    }
+
     return res.send('accept application route')
   } catch (error) {
     console.log(error)
