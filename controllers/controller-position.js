@@ -108,7 +108,7 @@ exports.getPositionById = async (req, res) => {
           ) AS technologies
         FROM position_tech AS pt
         JOIN positions AS p ON p.id = pt.position_id
-        WHERE p.id = $1
+        WHERE p.id = $1 and p.number_of_positions > 0
         GROUP BY p.title, p.id;
       `,
       [positionId]
@@ -158,7 +158,7 @@ exports.getPositionsByProject = async (req, res) => {
                 ) AS technologies
         FROM positions p
         JOIN position_tech AS pt ON pt.position_id = p.id
-        WHERE p.project_id = $1
+        WHERE p.project_id = $1 and p.number_of_positions > 0
         GROUP BY p.title, p.id
         ORDER BY title ASC;
       `,

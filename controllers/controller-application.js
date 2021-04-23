@@ -106,13 +106,13 @@ exports.acceptApplication = async (req, res) => {
   try {
     const position = await pool.query(
       `
-        select number_of_positions
+        select number_of_positions, title, project_id
         from positions
         where user_id = $1 and id = $2
       `,
       [owner, positionId]
     )
-    console.log('owner check: ', position.rows)
+
     if(position.rows.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -134,6 +134,14 @@ exports.acceptApplication = async (req, res) => {
         where id = $1
       `,
       [positionId]
+    )
+
+    await pool.query(
+      `
+        insert into collaborators (position, user_id, project_id)
+        values ($1, $2, $3)
+      `,
+      [position.rows[0].title, applicant, position.rows[0].project_id]
     )
 
     return res.send('accept application route')
