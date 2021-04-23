@@ -5,7 +5,7 @@ exports.createAndSaveBearerToken = async(user, res, pool) => {
   try {
     // Create and sign the bearer token
     const token = jwt.sign(
-      { id: user.id, username: user.username, email: user.username },
+      { id: user.id, username: user.username, email: user.email },
       config.get('bearerTokenSecret')
     )
 
