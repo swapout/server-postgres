@@ -97,3 +97,51 @@ exports.getApplicationsByPosition = async (req, res) => {
     })
   }
 }
+
+exports.acceptApplication = async (req, res) => {
+  const owner = req.body.decoded.id
+  const positionId = req.body.position
+  const applicant = req.body.applicant
+
+  try {
+    const position = await pool.query(
+      `
+        select number_of_positions
+        from positions
+        where user_id = $1 and id = $2
+      `,
+      [owner, positionId]
+    )
+    console.log('owner check: ', position.rows)
+    if(position.rows.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Unable to find this position with this owner'
+      })
+    }
+
+    if(position.rows[0].number_of_positions === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There are no available positions left'
+      })
+    }
+
+    await pool.query(
+      `
+        update positions
+        set number_of_positions = number_of_positions-1
+        where id = $1
+      `,
+      [positionId]
+    )
+
+    return res.send('accept application route')
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
