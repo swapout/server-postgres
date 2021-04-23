@@ -110,7 +110,7 @@ exports.fakeProject = async (req, res) => {
     while(numberOfFakeProjects > 0) {
       const randomUser = await getRandomUser()
       const userId = randomUser.rows[0].id
-      const randomDate = faker.date.between(randomUser.rows[0].created_at, maxDate)
+      const randomDate = faker.date.between(moment(randomUser.rows[0].created_at), maxDate)
       let project = {
         name: faker.random.words(numberOfWordsInName),
         description: faker.lorem.words(numberOfWordsInDescription),
@@ -163,7 +163,7 @@ exports.fakePosition = async (req, res) => {
       const randomProject = await getRandomProject()
       const projectId = randomProject.rows[0].id
       const projectOwner = randomProject.rows[0].owner
-      const randomDate = faker.date.between(randomProject.rows[0].created_at, maxDate)
+      const randomDate = faker.date.between(moment(randomProject.rows[0].created_at), maxDate)
 
       let position = {
         title: faker.random.words(numberOfWordsInTitle),
@@ -182,6 +182,16 @@ exports.fakePosition = async (req, res) => {
           RETURNING *;
         `,
         [position.title, position.description, position.numberOfPositions, position.projectId, position.userId, position.createdAt, position.updatedAt]
+      )
+
+      await pool.query(
+        `
+        UPDATE projects
+        SET jobsAvailable = true
+        WHERE id = $1
+        RETURNING *;
+      `,
+        [projectId]
       )
       console.log(savedPosition.rows[0])
       const technologies = await getTableSample('technologies', maxTech)
