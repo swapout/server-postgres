@@ -104,7 +104,7 @@ exports.getProjectsByUser = async (req, res) => {
           p.created_at,
           p.updated_at,
           jsonb_agg(
-            jsonb_build_object(
+           pt.label
               'label', pt.label, 
               'value', pt.value, 
               'id', pt.technology_id
@@ -262,7 +262,7 @@ exports.getAllProjects = async (req, res) => {
           p.created_at,
           p.updated_at,
           jsonb_agg(
-            jsonb_build_object(
+            pt.label
                 'label', pt.label, 
                 'value', pt.value, 
                 'id', pt.technology_id

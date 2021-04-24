@@ -172,11 +172,7 @@ exports.getPositionsByProject = async (req, res) => {
                p.created_at,
                p.updated_at,
                jsonb_agg(
-                  jsonb_build_object(
-                    'label', pt.label, 
-                    'value', pt.value, 
-                    'id', pt.technology_id
-                  )
+                  pt.label
                 ) AS technologies
         FROM positions p
         JOIN position_tech AS pt ON pt.position_id = p.id
