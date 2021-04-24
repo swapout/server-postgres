@@ -122,7 +122,8 @@ exports.getProjectsByUser = async (req, res) => {
     if(foundProjects.rows.length === 0) {
       return res.status(400).json({
         status: 400,
-        message: 'No projects found for this user'
+        message: 'No projects found for this user',
+        projects: []
       })
     }
 
