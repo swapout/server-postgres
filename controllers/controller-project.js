@@ -75,7 +75,7 @@ exports.getProjectById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: normalizeProject(foundProject.rows)
+      project: normalizeProject(foundProject.rows, true)
     })
   } catch (error) {
     console.log(error.message)
@@ -324,7 +324,7 @@ exports.getAllProjects = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Get projects were successful',
-      projects: normalizeProject(foundProjects.rows)
+      projects: normalizeProject(foundProjects.rows, true)
     })
   } catch (error) {
     console.log(error.message)
@@ -439,8 +439,8 @@ exports.deleteProjectById = async (req, res) => {
 // HELPERS //
 /////////////
 
-const normalizeProject = (projectsArray) => {
-  if(projectsArray.length === 1) {
+const normalizeProject = (projectsArray, isArray = false) => {
+  if(projectsArray.length === 1 && !isArray) {
     const project = projectsArray[0]
     return {
       id: project.id,
