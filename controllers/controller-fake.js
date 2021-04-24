@@ -157,9 +157,12 @@ exports.fakePosition = async (req, res) => {
   const maxNumPos = req.body.maxNumPos
   const numberOfWordsInTitle= req.body.numberOfWordsInTitle
   const numberOfWordsInDescription = req.body.numberOfWordsInDescription
+
   let positions = []
   try {
     while(numberOfFakePositions > 0) {
+      const role = await getTableSample('roles', 1)
+      const level = faker.random.arrayElement(['junior', 'mid', 'senior', 'lead'])
       const randomProject = await getRandomProject()
       const projectId = randomProject.rows[0].id
       const projectOwner = randomProject.rows[0].owner
@@ -171,17 +174,19 @@ exports.fakePosition = async (req, res) => {
         numberOfPositions: faker.datatype.number({min: minNumPos, max: maxNumPos, precision: 1}),
         projectId: projectId,
         userId: projectOwner,
+        role: role,
+        level: level,
         createdAt: randomDate,
         updatedAt: randomDate
       }
 
       const savedPosition = await pool.query(
         `
-          INSERT INTO positions (title, description, number_of_positions, project_id, user_id, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          INSERT INTO positions (title, description, number_of_positions, project_id, user_id, created_at, updated_at, role, level)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           RETURNING *;
         `,
-        [position.title, position.description, position.numberOfPositions, position.projectId, position.userId, position.createdAt, position.updatedAt]
+        [position.title, position.description, position.numberOfPositions, position.projectId, position.userId, position.createdAt, position.updatedAt, position.role.rows[0].label, position.level]
       )
 
       await pool.query(
@@ -193,7 +198,7 @@ exports.fakePosition = async (req, res) => {
       `,
         [projectId]
       )
-      console.log(savedPosition.rows[0])
+
       const technologies = await getTableSample('technologies', maxTech)
       savedPosition.rows[0].technologies = await insertPositionTech(getLabelArray(technologies.rows), savedPosition.rows[0].id, pool)
       positions.push(savedPosition.rows[0])
@@ -225,8 +230,7 @@ exports.fakeApplication = async (req, res) => {
       const projectOwner = randomPosition.rows[0].user_id
       const randomDate = faker.date.between(moment(randomPosition.rows[0].created_at), maxDate)
       const randomUser = await getRandomUser()
-      console.log(randomUser.rows[0].id)
-      console.log(projectOwner)
+
       if(randomUser.rows[0].id !== projectOwner) {
         const isExistingApplication = await pool.query(
           `

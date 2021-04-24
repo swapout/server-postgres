@@ -75,7 +75,7 @@ exports.getProjectById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: normalizeProject(foundProject.rows, true)
+      project: normalizeProject(foundProject.rows, false)
     })
   } catch (error) {
     console.log(error.message)
