@@ -173,7 +173,62 @@ exports.acceptApplication = async (req, res) => {
       )
     }
 
-    return res.send('accept application route')
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully updated application'
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.declineApplication = async (req, res) => {
+  const owner = req.body.decoded.id
+  const positionId = req.body.position
+  const applicant = req.body.applicant
+
+  try {
+    const position = await pool.query(
+      `
+        select project_id
+        from positions
+        where user_id = $1 and id = $2
+      `,
+      [owner, positionId]
+    )
+
+    if(position.rows.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Unable to find this position with this owner'
+      })
+    }
+
+    const updatedApplication = await pool.query(
+      `
+        update positions_applications_relations
+        set status = 'declined'
+        where user_id = $1 and position_id = $2 and status = 'pending'
+        returning id;
+      `,
+      [applicant, positionId]
+    )
+
+    if (updatedApplication.rows.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Unable to update this application'
+      })
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully updated application'
+    })
   } catch (error) {
     console.log(error)
     return res.status(500).json({

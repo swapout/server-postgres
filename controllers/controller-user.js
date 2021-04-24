@@ -155,6 +155,7 @@ exports.getUserProfile = async (req, res) => {
   try {
     // Gets user ID
     const id = req.body.decoded.id
+    console.log('Token - getUserProfile:', req.body.token)
 
     let foundUser = await pool.query(
       `
@@ -242,7 +243,7 @@ exports.updateUser = async (req, res) => {
   try {
     // Gets user ID
     const id = req.body.decoded.id
-
+    console.log('Token - updateUser: ', req.body.token)
     // Create the user object from user input
     let user = {
       bio: req.body.user.bio,

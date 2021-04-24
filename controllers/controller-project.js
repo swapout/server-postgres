@@ -106,10 +106,6 @@ exports.getProjectsByUser = async (req, res) => {
           p.updated_at,
           jsonb_agg(
            pt.label
-              'label', pt.label, 
-              'value', pt.value, 
-              'id', pt.technology_id
-            )
           ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
@@ -152,10 +148,16 @@ exports.getAllProjects = async (req, res) => {
   let match = req.query.match || 'any'
   let positions = req.query.positions
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
-
+  console.log(match)
   try {
     if(technologies) {
       technologies = technologies.split(',')
+
+      if(technologies[technologies.length - 1] === '') {
+        technologies.pop()
+      }
+
+      console.log(technologies)
       if(match === 'any') {
         technologies = await pool.query(
           `
@@ -264,10 +266,6 @@ exports.getAllProjects = async (req, res) => {
           p.updated_at,
           jsonb_agg(
             pt.label
-                'label', pt.label, 
-                'value', pt.value, 
-                'id', pt.technology_id
-            )
           ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
@@ -445,7 +443,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
   if(projectsArray.length === 1 && !isArray) {
     const project = projectsArray[0]
     return {
-      id: project.id,
+      _id: project.id,
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
@@ -459,7 +457,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
 
    return projectsArray.map((project) => {
     return {
-      id: project.id,
+      _id: project.id,
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
