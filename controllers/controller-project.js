@@ -442,7 +442,7 @@ exports.deleteProjectById = async (req, res) => {
 const normalizeProject = (projectsArray) => {
   if(projectsArray.length === 1) {
     const project = projectsArray[0]
-    return [{
+    return {
       id: project.id,
       name: project.name,
       description: project.description,
@@ -452,7 +452,7 @@ const normalizeProject = (projectsArray) => {
       technologies: project.technologies,
       createdAt: project.created_at,
       updatedAt: project.updated_at
-    }]
+    }
   }
 
    return projectsArray.map((project) => {
