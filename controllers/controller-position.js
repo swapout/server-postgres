@@ -16,6 +16,8 @@ exports.createPosition = async (req, res) => {
     title: req.body.position.title,
     description: req.body.position.description,
     project: req.body.position.projectId,
+    level: req.body.position.level,
+    role: req.body.position.role,
     technologies: req.body.position.technologies,
     numberOfPositions: req.body.position.numberOfPositions,
   }
@@ -44,11 +46,27 @@ exports.createPosition = async (req, res) => {
     // Save position to DB
     const savedPosition = await client.query(
       `
-        INSERT INTO positions (title, description, project_id, number_of_positions, user_id)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO positions (
+            title, 
+            description, 
+            project_id, 
+            number_of_positions, 
+            user_id, 
+            level, 
+            role
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `,
-      [position.title, position.description, position.project, position.numberOfPositions, userId]
+      [
+        position.title,
+        position.description,
+        position.project,
+        position.numberOfPositions,
+        userId,
+        position.level,
+        position.role
+      ]
     )
 
     await client.query(
@@ -313,13 +331,15 @@ exports.deletePositionById = async (req, res) => {
 // HELPERS //
 /////////////
 
-const normalizePosition = (positionsArray) => {
-  if(positionsArray.length === 1) {
+const normalizePosition = (positionsArray, isArray = false) => {
+  if(positionsArray.length === 1 && !isArray) {
     const position = positionsArray[0]
     return {
       id: position.id,
       title: position.title,
       description: position.description,
+      role: position.role,
+      level: position.level,
       numberOfPositions: position.number_of_positions,
       projectId: position.project_id,
       userId: position.user_id,
@@ -334,6 +354,8 @@ const normalizePosition = (positionsArray) => {
       id: position.id,
       title: position.title,
       description: position.description,
+      role: position.role,
+      level: position.level,
       numberOfPositions: position.number_of_positions,
       projectId: position.project_id,
       userId: position.user_id,
