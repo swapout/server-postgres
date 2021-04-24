@@ -75,7 +75,7 @@ exports.getProjectById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: normalizeProject(foundProject.rows, false)
+      project: normalizeProject(foundProject.rows)
     })
   } catch (error) {
     console.log(error.message)
@@ -129,7 +129,7 @@ exports.getProjectsByUser = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Get projects by user ID were successful',
-      projects: normalizeProject(foundProjects.rows)
+      projects: normalizeProject(foundProjects.rows, true)
     })
   } catch (error) {
     console.log(error.message)
