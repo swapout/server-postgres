@@ -148,7 +148,7 @@ exports.getAllProjects = async (req, res) => {
   let match = req.query.match || 'any'
   let positions = req.query.positions
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
-  console.log(match)
+
   try {
     if(technologies) {
       technologies = technologies.split(',')
@@ -156,8 +156,7 @@ exports.getAllProjects = async (req, res) => {
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
-
-      console.log(technologies)
+    
       if(match === 'any') {
         technologies = await pool.query(
           `
@@ -272,7 +271,7 @@ exports.getAllProjects = async (req, res) => {
         WHERE p.id in (
           select distinct project_id 
           from project_tech pt
-          where pt.technology_id in (%6$L))
+          where pt.label in (%6$L))
           and p.jobsavailable in (%5$L)
           and p.name ilike %7$L
         GROUP BY p.name, p.id
