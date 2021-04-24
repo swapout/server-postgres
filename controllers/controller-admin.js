@@ -215,8 +215,8 @@ exports.deleteEverything = async (req, res) => {
         DROP TABLE reset_password_tokens;
         DROP TABLE users;
         DROP TABLE languages;
-        DROP TYPE status;
-        DROP TYPE level;
+        DROP TYPE IF EXISTS status;
+        DROP TYPE IF EXISTS level;
       `
     )
 
