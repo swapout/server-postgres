@@ -112,6 +112,8 @@ exports.getPositionById = async (req, res) => {
           p.id,
           p.title, 
           p.description,
+          p.level,
+          p.role,
           p.number_of_positions,
           p.project_id,
           p.user_id,
@@ -162,6 +164,8 @@ exports.getPositionsByProject = async (req, res) => {
         SELECT p.id,
                p.title,
                p.description,
+               p.level,
+               p.role,
                p.number_of_positions,
                p.project_id,
                p.user_id,
@@ -187,14 +191,14 @@ exports.getPositionsByProject = async (req, res) => {
       return res.status(200).json({
         status: 200,
         message: 'This project doesn\'t have positions',
-        positions: foundPositions.rows
+        positions: []
       })
     }
 
     return res.status(200).json({
       status: 200,
       message: 'Get positions by project ID were successful',
-      positions: foundPositions.rows
+      positions: normalizePosition(foundPositions.rows, true)
     })
   } catch (error) {
     console.log(error)
@@ -207,6 +211,7 @@ exports.getPositionsByProject = async (req, res) => {
 
 exports.getAllPositions = async (req, res) => {
   try {
+    // TODO: Finish this after everything is setup on the project
 
     return res.status(200).json({
       status: 200,
@@ -234,6 +239,8 @@ exports.updatePositionById = async (req, res) => {
   const position = {
     title: req.body.position.title,
     description: req.body.position.description,
+    level: req.body.position.level,
+    role: req.body.position.role,
     numberOfPositions: req.body.position.numberOfPositions,
     projectId: req.body.position.projectId,
     technologies: req.body.position.technologies,
@@ -261,13 +268,15 @@ exports.updatePositionById = async (req, res) => {
       `
         UPDATE positions
         SET title = $1, 
-            description = $2, 
+            description = $2,
+            level = $7,
+            role = $8, 
             number_of_positions = $3, 
             updated_at = $4
         WHERE id = $5 AND user_id = $6
-        RETURNING id, title, description, number_of_positions, project_id, user_id, created_at, updated_at
+        RETURNING id, title, description, level, role, number_of_positions, project_id, user_id, created_at, updated_at
       `,
-      [position.title, position.description, position.numberOfPositions, position.updatedAt, positionId, userId]
+      [position.title, position.description, position.numberOfPositions, position.updatedAt, positionId, userId, position.level, position.role]
     )
 
     await deletePositionTech(updatedPosition.rows[0].id, client)
