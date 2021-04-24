@@ -207,7 +207,7 @@ exports.fakePosition = async (req, res) => {
 
     return res.status(201).json({
       status: 201,
-      message: `${positions.length} projects created`,
+      message: `${positions.length} positions created`,
       positions
     })
   } catch (error) {

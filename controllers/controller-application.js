@@ -157,7 +157,7 @@ exports.acceptApplication = async (req, res) => {
       `
         select id
         from positions p 
-        where project_id = 1 and number_of_positions > 1;
+        where project_id = $1 and number_of_positions > 1;
       `,
       [position.rows[0].project_id]
     )
