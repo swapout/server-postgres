@@ -139,6 +139,7 @@ exports.getProjectsByUser = async (req, res) => {
 }
 
 exports.getAllProjects = async (req, res) => {
+  const owner = req.body.decoded.id
   const page = req.query.page || 1
   const itemsPerPage = req.query.itemsPerPage || 9999
   const offset = (page - 1) * itemsPerPage
@@ -275,12 +276,13 @@ exports.getAllProjects = async (req, res) => {
           where pt.technology_id in (%6$L))
           and p.jobsavailable in (%5$L)
           and p.name ilike %7$L
+          and p.owner != %8$L
         GROUP BY p.name, p.id
         order by %1$s %2$s
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery, owner
       )
     } else {
       sql = format(
@@ -305,12 +307,13 @@ exports.getAllProjects = async (req, res) => {
           where pt.project_id in (%6$L))
           and p.jobsavailable in (%5$L)
           and p.name ilike %7$L
+          and p.owner != %8$L
         GROUP BY p.name, p.id
         order by %1$s %2$s
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery, owner
       )
     }
 
