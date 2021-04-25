@@ -4,6 +4,7 @@ const format = require('pg-format');
 const technologies = require('../data/technologies')
 const languages = require('../data/languages')
 const roles = require('../data/roles')
+const levels = require('../data/levels')
 
 exports.createTables = async (req, res) => {
 
@@ -128,6 +129,17 @@ exports.createTables = async (req, res) => {
     )
 
     await client.query(
+      `CREATE TABLE IF NOT EXISTS levels (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(100) NOT NULL UNIQUE,
+        value VARCHAR(100) NOT NULL UNIQUE,
+        status INTEGER DEFAULT 1,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`
+    )
+
+    await client.query(
       `CREATE TABLE IF NOT EXISTS positions_technologies_relations (
         id SERIAL PRIMARY KEY,
         position_id INTEGER NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
@@ -211,6 +223,7 @@ exports.deleteEverything = async (req, res) => {
         DROP TABLE projects;
         DROP TABLE technologies;
         DROP TABLE roles;
+        DROP TABLE levels;
         DROP TABLE bearer_tokens;
         DROP TABLE reset_password_tokens;
         DROP TABLE users;
@@ -357,6 +370,44 @@ exports.addRoles = async (req, res) => {
     await client.query('COMMIT')
 
     return res.send('Roles were added')
+
+  } catch (error) {
+    await client.query('ROLLBACK')
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  } finally {
+    client.release()
+  }
+}
+
+exports.addLevels = async (req, res) => {
+  const client = await pool.connect()
+  await client.query('BEGIN')
+
+  try {
+    const updatedLevels = levels.map((level) => {
+      return [
+        level.name,
+        level.name.toLowerCase()
+      ]
+    })
+
+    console.log(updatedLevels)
+
+    const sql = format(`
+      INSERT INTO levels (label, value)
+      VALUES %L;
+      `,
+      updatedLevels
+    )
+
+    await client.query(sql)
+    await client.query('COMMIT')
+
+    return res.send('Levels were added')
 
   } catch (error) {
     await client.query('ROLLBACK')

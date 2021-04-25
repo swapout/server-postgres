@@ -6,6 +6,7 @@ const userRoutes = require('../routes/router-user')
 const technologyRoutes = require('../routes/router-technology')
 const languageRoutes = require('../routes/router-language')
 const roleRoutes = require('../routes/router-role')
+const levelRoutes = require('../routes/router-level')
 const projectRoutes = require('../routes/router-project')
 const positionRoutes = require('../routes/router-position')
 const applicationRoutes = require('../routes/router-application')
@@ -18,6 +19,7 @@ router.use('/technology', technologyRoutes)
 router.use('/language', languageRoutes)
 router.use('/application', applicationRoutes)
 router.use('/role', roleRoutes)
+router.use('/level', levelRoutes)
 
 
 if(process.env.NODE_ENV === 'dev') {

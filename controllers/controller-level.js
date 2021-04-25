@@ -1,17 +1,17 @@
 const { pool } = require('../config/db')
 
-exports.listRoles = async (req, res) => {
+exports.listLevels = async (req, res) => {
   try {
-    let roles = await pool.query(
+    let levels = await pool.query(
       `
-        SELECT label, value, id FROM roles
+        SELECT label, value, id FROM levels
       `
     )
 
     return res.status(200).json({
       status: 200,
-      message: 'Successfully listed roles',
-      roles: roles.rows
+      message: 'Successfully listed levels',
+      levels: levels.rows
     })
   } catch (error) {
     console.log(error)
