@@ -156,7 +156,8 @@ exports.getAllProjects = async (req, res) => {
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
-    
+      console.log(technologies)
+
       if(match === 'any') {
         technologies = await pool.query(
           `
@@ -271,7 +272,7 @@ exports.getAllProjects = async (req, res) => {
         WHERE p.id in (
           select distinct project_id 
           from project_tech pt
-          where pt.label in (%6$L))
+          where pt.technology_id in (%6$L))
           and p.jobsavailable in (%5$L)
           and p.name ilike %7$L
         GROUP BY p.name, p.id
@@ -294,11 +295,7 @@ exports.getAllProjects = async (req, res) => {
           p.created_at,
           p.updated_at,
           jsonb_agg(
-            jsonb_build_object(
-                'label', pt.label, 
-                'value', pt.value, 
-                'id', pt.technology_id
-            )
+            pt.label
           ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
