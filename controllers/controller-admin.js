@@ -209,25 +209,25 @@ exports.deleteEverything = async (req, res) => {
   try {
     await client.query(
       `
-        DROP VIEW user_lang;
-        DROP VIEW user_tech;
-        DROP VIEW project_tech;
-        DROP VIEW position_tech;
-        DROP TABLE positions_technologies_relations;
-        DROP TABLE positions_applications_relations;
-        DROP TABLE users_technologies_relations;
-        DROP TABLE users_languages_relations;
-        DROP TABLE projects_technologies_relations;
-        DROP TABLE positions;
-        DROP TABLE collaborators;
-        DROP TABLE projects;
-        DROP TABLE technologies;
-        DROP TABLE roles;
-        DROP TABLE levels;
-        DROP TABLE bearer_tokens;
-        DROP TABLE reset_password_tokens;
-        DROP TABLE users;
-        DROP TABLE languages;
+        DROP VIEW IF EXISTS user_lang;
+        DROP VIEW IF EXISTS user_tech;
+        DROP VIEW IF EXISTS project_tech;
+        DROP VIEW IF EXISTS position_tech;
+        DROP TABLE IF EXISTS positions_technologies_relations;
+        DROP TABLE IF EXISTS positions_applications_relations;
+        DROP TABLE IF EXISTS users_technologies_relations;
+        DROP TABLE IF EXISTS users_languages_relations;
+        DROP TABLE IF EXISTS projects_technologies_relations;
+        DROP TABLE IF EXISTS positions;
+        DROP TABLE IF EXISTS collaborators;
+        DROP TABLE IF EXISTS projects;
+        DROP TABLE IF EXISTS technologies;
+        DROP TABLE IF EXISTS roles;
+        DROP TABLE IF EXISTS levels;
+        DROP TABLE IF EXISTS bearer_tokens;
+        DROP TABLE IF EXISTS reset_password_tokens;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS languages;
         DROP TYPE IF EXISTS status;
         DROP TYPE IF EXISTS level;
       `
