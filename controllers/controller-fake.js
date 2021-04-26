@@ -171,7 +171,7 @@ exports.fakePosition = async (req, res) => {
       let position = {
         title: faker.random.words(numberOfWordsInTitle),
         description: faker.lorem.words(numberOfWordsInDescription),
-        numberOfPositions: faker.datatype.number({min: minNumPos, max: maxNumPos, precision: 1}),
+        vacancies: faker.datatype.number({min: minNumPos, max: maxNumPos, precision: 1}),
         projectId: projectId,
         userId: projectOwner,
         role: role,
@@ -182,11 +182,11 @@ exports.fakePosition = async (req, res) => {
 
       const savedPosition = await pool.query(
         `
-          INSERT INTO positions (title, description, number_of_positions, project_id, user_id, created_at, updated_at, role, level)
+          INSERT INTO positions (title, description, vacancies, project_id, user_id, created_at, updated_at, role, level)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           RETURNING *;
         `,
-        [position.title, position.description, position.numberOfPositions, position.projectId, position.userId, position.createdAt, position.updatedAt, position.role.rows[0].label, position.level]
+        [position.title, position.description, position.vacancies, position.projectId, position.userId, position.createdAt, position.updatedAt, position.role.rows[0].label, position.level]
       )
 
       await pool.query(

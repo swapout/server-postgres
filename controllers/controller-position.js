@@ -19,7 +19,7 @@ exports.createPosition = async (req, res) => {
     level: req.body.position.level,
     role: req.body.position.role,
     technologies: req.body.position.technologies,
-    numberOfPositions: req.body.position.numberOfPositions,
+    vacancies: req.body.position.vacancies,
   }
 
   try {
@@ -50,7 +50,7 @@ exports.createPosition = async (req, res) => {
             title, 
             description, 
             project_id, 
-            number_of_positions, 
+            vacancies, 
             user_id, 
             level, 
             role
@@ -62,7 +62,7 @@ exports.createPosition = async (req, res) => {
         position.title,
         position.description,
         position.project,
-        position.numberOfPositions,
+        position.vacancies,
         userId,
         position.level,
         position.role
@@ -114,7 +114,7 @@ exports.getPositionById = async (req, res) => {
           p.description,
           p.level,
           p.role,
-          p.number_of_positions,
+          p.vacancies,
           p.project_id,
           p.user_id,
           p.created_at,
@@ -128,7 +128,7 @@ exports.getPositionById = async (req, res) => {
           ) AS technologies
         FROM position_tech AS pt
         JOIN positions AS p ON p.id = pt.position_id
-        WHERE p.id = $1 and p.number_of_positions > 0
+        WHERE p.id = $1 and p.vacancies > 0
         GROUP BY p.title, p.id;
       `,
       [positionId]
@@ -166,7 +166,7 @@ exports.getPositionsByProject = async (req, res) => {
                p.description,
                p.level,
                p.role,
-               p.number_of_positions,
+               p.vacancies,
                p.project_id,
                p.user_id,
                p.created_at,
@@ -176,7 +176,7 @@ exports.getPositionsByProject = async (req, res) => {
                 ) AS technologies
         FROM positions p
         JOIN position_tech AS pt ON pt.position_id = p.id
-        WHERE p.project_id = $1 and p.number_of_positions > 0
+        WHERE p.project_id = $1 and p.vacancies > 0
         GROUP BY p.title, p.id
         ORDER BY title ASC;
       `,
@@ -237,7 +237,7 @@ exports.updatePositionById = async (req, res) => {
     description: req.body.position.description,
     level: req.body.position.level,
     role: req.body.position.role,
-    numberOfPositions: req.body.position.numberOfPositions,
+    vacancies: req.body.position.vacancies,
     projectId: req.body.position.projectId,
     technologies: req.body.position.technologies,
     updatedAt: moment()
@@ -267,12 +267,12 @@ exports.updatePositionById = async (req, res) => {
             description = $2,
             level = $7,
             role = $8, 
-            number_of_positions = $3, 
+            vacancies = $3, 
             updated_at = $4
         WHERE id = $5 AND user_id = $6
-        RETURNING id, title, description, level, role, number_of_positions, project_id, user_id, created_at, updated_at
+        RETURNING id, title, description, level, role, vacancies, project_id, user_id, created_at, updated_at
       `,
-      [position.title, position.description, position.numberOfPositions, position.updatedAt, positionId, userId, position.level, position.role]
+      [position.title, position.description, position.vacancies, position.updatedAt, positionId, userId, position.level, position.role]
     )
 
     await deletePositionTech(updatedPosition.rows[0].id, client)
@@ -345,7 +345,7 @@ const normalizePosition = (positionsArray, isArray = false) => {
       description: position.description,
       role: position.role,
       level: position.level,
-      numberOfPositions: position.number_of_positions,
+      vacancies: position.vacancies,
       projectId: position.project_id,
       userId: position.user_id,
       technologies: position.technologies,
@@ -361,7 +361,7 @@ const normalizePosition = (positionsArray, isArray = false) => {
       description: position.description,
       role: position.role,
       level: position.level,
-      numberOfPositions: position.number_of_positions,
+      vacancies: position.vacancies,
       projectId: position.project_id,
       userId: position.user_id,
       technologies: position.technologies,

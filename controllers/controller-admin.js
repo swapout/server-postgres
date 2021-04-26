@@ -87,7 +87,7 @@ exports.createTables = async (req, res) => {
         description TEXT NOT NULL,
         level level NOT NULL DEFAULT 'junior',
         role VARCHAR(255) NOT NULL,
-        number_of_positions INTEGER default 1,
+        vacancies INTEGER default 1,
         project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

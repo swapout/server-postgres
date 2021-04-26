@@ -4,7 +4,8 @@ const {
   createApplication,
   getApplicationsByPosition,
   acceptApplication,
-  declineApplication
+  declineApplication,
+  revokeApplication,
 } = require('../controllers/controller-application')
 
 const { auth } = require('../middlewares/middleware-auth')
@@ -15,6 +16,6 @@ router.post('/', auth, createApplication)
 router.get('/:position', auth, getApplicationsByPosition)
 router.post('/accept', auth, acceptApplication)
 router.post('/decline', auth, declineApplication)
-
+router.delete('/revoke', auth, revokeApplication)
 
 module.exports = router

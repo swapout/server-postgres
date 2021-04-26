@@ -17,7 +17,7 @@ exports.createApplication = async (req, res) => {
       `
         SELECT  id
         FROM positions
-        WHERE id = $1 AND user_id != $2 AND number_of_positions > 0;
+        WHERE id = $1 AND user_id != $2 AND vacancies > 0;
       `,
       [positionId, userId]
     )
@@ -106,7 +106,7 @@ exports.acceptApplication = async (req, res) => {
   try {
     const position = await pool.query(
       `
-        select number_of_positions, title, project_id
+        select vacancies, title, project_id
         from positions
         where user_id = $1 and id = $2
       `,
@@ -120,7 +120,7 @@ exports.acceptApplication = async (req, res) => {
       })
     }
 
-    if(position.rows[0].number_of_positions === 0) {
+    if(position.rows[0].vacancies === 0) {
       return res.status(404).json({
         status: 404,
         message: 'There are no available positions left'
@@ -130,7 +130,7 @@ exports.acceptApplication = async (req, res) => {
     await pool.query(
       `
         update positions
-        set number_of_positions = number_of_positions-1
+        set vacancies = vacancies-1
         where id = $1
       `,
       [positionId]
@@ -157,7 +157,7 @@ exports.acceptApplication = async (req, res) => {
       `
         select id
         from positions p 
-        where project_id = $1 and number_of_positions > 1;
+        where project_id = $1 and vacancies > 1;
       `,
       [position.rows[0].project_id]
     )
@@ -196,15 +196,22 @@ exports.declineApplication = async (req, res) => {
       `
         select project_id
         from positions
-        where user_id = $1 and id = $2
+        where id = $2
       `,
-      [owner, positionId]
+      [positionId]
     )
 
     if(position.rows.length === 0) {
       return res.status(404).json({
         status: 404,
         message: 'Unable to find this position with this owner'
+      })
+    }
+
+    if(position.rows[0].user_id !== owner) {
+      return res.status(401).json({
+        status: 401,
+        message: 'This application doesn\'t belong to you'
       })
     }
 
@@ -219,8 +226,8 @@ exports.declineApplication = async (req, res) => {
     )
 
     if (updatedApplication.rows.length === 0) {
-      return res.status(404).json({
-        status: 404,
+      return res.status(500).json({
+        status: 500,
         message: 'Unable to update this application'
       })
     }
@@ -229,6 +236,58 @@ exports.declineApplication = async (req, res) => {
       status: 200,
       message: 'Successfully updated application'
     })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.revokeApplication = async (req, res) => {
+  const userId = req.body.decoded.id
+  const applicationId = req.query.id
+
+  try {
+    let application = await pool.query(
+      `
+        SELECT *
+        FROM positions_applications_relations
+        WHERE id = $1;
+      `,
+      [applicationId]
+    )
+
+    application = application.rows
+
+    if (application.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'No application found with this ID',
+      })
+    }
+
+    if (application[0].user_id !== userId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'This application doesn\'t belong to you'
+      })
+    }
+
+    await pool.query(
+      `
+       DELETE FROM positions_applications_relations
+       WHERE id = $1;
+      `,
+      [applicationId]
+    )
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully revoked application'
+    })
+
   } catch (error) {
     console.log(error)
     return res.status(500).json({
