@@ -157,7 +157,6 @@ exports.getAllProjects = async (req, res) => {
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
-      console.log(technologies)
 
       if(match === 'any') {
         technologies = await pool.query(
@@ -262,7 +261,7 @@ exports.getAllProjects = async (req, res) => {
           p.name, 
           p.description,
           p.projecturl,
-          p.hasPositions,
+          p.haspositions,
           p.created_at,
           p.updated_at,
           jsonb_agg(
@@ -293,7 +292,7 @@ exports.getAllProjects = async (req, res) => {
           p.name, 
           p.description,
           p.projecturl,
-          p.hasPositions,
+          p.haspositions,
           p.created_at,
           p.updated_at,
           jsonb_agg(
@@ -446,7 +445,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
-      hasPositions: project.hasPositions,
+      hasPositions: project.haspositions,
       owner: project.owner,
       technologies: project.technologies,
       createdAt: project.created_at,
@@ -460,7 +459,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
-      hasPositions: project.hasPositions,
+      hasPositions: project.haspositions,
       owner: project.owner,
       technologies: project.technologies,
       createdAt: project.created_at,
