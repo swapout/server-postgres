@@ -101,7 +101,7 @@ exports.getProjectsByUser = async (req, res) => {
           p.name, 
           p.description,
           p.projecturl,
-          p.jobsavailable,
+          p.hasPositions,
           p.created_at,
           p.updated_at,
           jsonb_agg(
@@ -147,7 +147,7 @@ exports.getAllProjects = async (req, res) => {
   let sortObj = {}
   let technologies = req.query.technologies
   let match = req.query.match || 'any'
-  let positions = req.query.positions
+  let hasPositions = req.query.hasPositions
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
 
   try {
@@ -241,15 +241,15 @@ exports.getAllProjects = async (req, res) => {
         }
     }
 
-    switch (positions) {
+    switch (hasPositions) {
       case 'true':
-        positions = [true]
+        hasPositions = [true]
         break
       case 'false':
-        positions = [false]
+        hasPositions = [false]
         break
       default:
-        positions = [true, false]
+        hasPositions = [true, false]
     }
 
     let sql
@@ -262,7 +262,7 @@ exports.getAllProjects = async (req, res) => {
           p.name, 
           p.description,
           p.projecturl,
-          p.jobsavailable,
+          p.hasPositions,
           p.created_at,
           p.updated_at,
           jsonb_agg(
@@ -274,7 +274,7 @@ exports.getAllProjects = async (req, res) => {
           select distinct project_id 
           from project_tech pt
           where pt.technology_id in (%6$L))
-          and p.jobsavailable in (%5$L)
+          and p.hasPositions in (%5$L)
           and p.name ilike %7$L
           and p.owner != %8$L
         GROUP BY p.name, p.id
@@ -282,7 +282,7 @@ exports.getAllProjects = async (req, res) => {
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery, owner
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, hasPositions, technologies, searchQuery, owner
       )
     } else {
       sql = format(
@@ -293,7 +293,7 @@ exports.getAllProjects = async (req, res) => {
           p.name, 
           p.description,
           p.projecturl,
-          p.jobsavailable,
+          p.hasPositions,
           p.created_at,
           p.updated_at,
           jsonb_agg(
@@ -305,7 +305,7 @@ exports.getAllProjects = async (req, res) => {
           select distinct project_id 
           from project_tech pt
           where pt.project_id in (%6$L))
-          and p.jobsavailable in (%5$L)
+          and p.hasPositions in (%5$L)
           and p.name ilike %7$L
           and p.owner != %8$L
         GROUP BY p.name, p.id
@@ -313,7 +313,7 @@ exports.getAllProjects = async (req, res) => {
         offset %3$L
         limit %4$L;
         `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, positions, technologies, searchQuery, owner
+        sortObj.sort, sortObj.direction, offset, itemsPerPage, hasPositions, technologies, searchQuery, owner
       )
     }
 
@@ -362,7 +362,7 @@ exports.updateProjectById = async (req, res) => {
             projectURL = $3,
             updated_at = $4
         WHERE owner = $5 AND id = $6
-        RETURNING id, owner, name, description, projectURL, jobsAvailable, created_at, updated_at
+        RETURNING id, owner, name, description, projectURL, hasPositions, created_at, updated_at
       `,
       [project.name, project.description, project.projectURL, currentLocalTime, id, projectId]
     )
@@ -446,7 +446,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
-      jobsAvailable: project.jobsavailable,
+      hasPositions: project.hasPositions,
       owner: project.owner,
       technologies: project.technologies,
       createdAt: project.created_at,
@@ -460,7 +460,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
-      jobsAvailable: project.jobsavailable,
+      hasPositions: project.hasPositions,
       owner: project.owner,
       technologies: project.technologies,
       createdAt: project.created_at,

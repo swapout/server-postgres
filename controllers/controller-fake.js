@@ -192,7 +192,7 @@ exports.fakePosition = async (req, res) => {
       await pool.query(
         `
         UPDATE projects
-        SET jobsAvailable = true
+        SET hasPositions = true
         WHERE id = $1
         RETURNING *;
       `,

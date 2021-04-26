@@ -72,7 +72,7 @@ exports.createPosition = async (req, res) => {
     await client.query(
       `
         UPDATE projects
-        SET jobsAvailable = true
+        SET hasPositions = true
         WHERE id = $1
         RETURNING *;
       `,

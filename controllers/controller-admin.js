@@ -61,7 +61,7 @@ exports.createTables = async (req, res) => {
         name VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         projectURL VARCHAR(255),
-        jobsAvailable BOOLEAN DEFAULT FALSE,
+        hasPositions BOOLEAN DEFAULT FALSE,
         owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
