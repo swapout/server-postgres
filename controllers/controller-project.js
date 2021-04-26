@@ -442,7 +442,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
   if(projectsArray.length === 1 && !isArray) {
     const project = projectsArray[0]
     return {
-      _id: project.id,
+      id: project.id,
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,
@@ -456,7 +456,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
 
    return projectsArray.map((project) => {
     return {
-      _id: project.id,
+      id: project.id,
       name: project.name,
       description: project.description,
       projectURL: project.projecturl,

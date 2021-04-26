@@ -15,6 +15,4 @@ sortedLevels.map((level) => {
   })
 })
 
-console.log(levelObjArr)
-
 module.exports = levelObjArr

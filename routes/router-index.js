@@ -15,9 +15,10 @@ const fakeRoutes = require('../routes/router-fake')
 router.use('/user', userRoutes)
 router.use('/project', projectRoutes)
 router.use('/position', positionRoutes)
+router.use('/application', applicationRoutes)
+
 router.use('/technology', technologyRoutes)
 router.use('/language', languageRoutes)
-router.use('/application', applicationRoutes)
 router.use('/role', roleRoutes)
 router.use('/level', levelRoutes)
 
