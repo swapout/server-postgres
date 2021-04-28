@@ -147,55 +147,16 @@ exports.getAllProjects = async (req, res) => {
   let sortObj = {}
   let technologies = req.query.technologies
   let match = req.query.match || 'any'
-  // TODO: Change this back after front-end update to hasPositions
-  let hasPositions = req.query.positions
+  let hasPositions = req.query.hasPositions
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
+  let sql
 
   try {
     if(technologies) {
       technologies = technologies.split(',')
-
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
-
-      if(match === 'any') {
-        technologies = await pool.query(
-          `
-            SELECT
-            jsonb_agg(
-              id
-            ) AS technologies
-            FROM technologies
-            WHERE label = ANY ($1);
-           `,
-          [technologies]
-        )
-        technologies = technologies.rows[0].technologies
-      } else if (match === 'all') {
-        technologies = await pool.query(
-          `
-            SELECT ARRAY(SELECT
-              pt2.project_id
-            FROM project_tech pt2 
-            JOIN (SELECT array_agg(label)::text[] AS tech_array, project_id
-            FROM project_tech pt
-            GROUP BY project_id) AS ta on ta.tech_array @> ($1)::text[]
-            WHERE pt2.project_id = ta.project_id
-            GROUP BY pt2.project_id) AS technologies;
-          `,
-          [technologies]
-        )
-        if(technologies.rows[0].technologies.length === 0) {
-          return res.status(200).json({
-            status: 200,
-            message: 'Get projects were successful',
-            projects: []
-          })
-        }
-        technologies = technologies.rows[0].technologies
-      }
-
     } else {
       technologies = await pool.query(
         `
@@ -207,6 +168,17 @@ exports.getAllProjects = async (req, res) => {
         `
       )
       technologies = technologies.rows[0].technologies
+    }
+
+    switch (match) {
+      case 'any':
+        match = '&&'
+        break
+      case 'all':
+        match = '@>'
+        break
+      default:
+        match = '&&'
     }
 
     switch (sort) {
@@ -252,70 +224,30 @@ exports.getAllProjects = async (req, res) => {
         hasPositions = [true, false]
     }
 
-    let sql
-    if (match !== 'all') {
-       sql = format(
-        `
-        SELECT 
-          p.id,
-          p.owner,
-          p.name, 
-          p.description,
-          p.projecturl,
-          p.haspositions,
-          p.created_at,
-          p.updated_at,
-          jsonb_agg(
-            pt.label
-          ) AS technologies
-        FROM projects AS p
-        JOIN project_tech AS pt ON pt.project_id = p.id
-        WHERE p.id in (
-          select distinct project_id 
-          from project_tech pt
-          where pt.technology_id in (%6$L))
-          and p.hasPositions in (%5$L)
-          and p.name ilike %7$L
-          and p.owner != %8$L
-        GROUP BY p.name, p.id
-        order by %1$s %2$s
-        offset %3$L
-        limit %4$L;
-        `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, hasPositions, technologies, searchQuery, owner
-      )
-    } else {
-      sql = format(
-        `
-        SELECT 
-          p.id,
-          p.owner,
-          p.name, 
-          p.description,
-          p.projecturl,
-          p.haspositions,
-          p.created_at,
-          p.updated_at,
-          jsonb_agg(
-            pt.label
-          ) AS technologies
-        FROM projects AS p
-        JOIN project_tech AS pt ON pt.project_id = p.id
-        WHERE p.id in (
-          select distinct project_id 
-          from project_tech pt
-          where pt.project_id in (%6$L))
-          and p.hasPositions in (%5$L)
-          and p.name ilike %7$L
-          and p.owner != %8$L
-        GROUP BY p.name, p.id
-        order by %1$s %2$s
-        offset %3$L
-        limit %4$L;
-        `,
-        sortObj.sort, sortObj.direction, offset, itemsPerPage, hasPositions, technologies, searchQuery, owner
-      )
-    }
+    sql = format(
+      `
+        SELECT p.id, p.owner, p.name, p.description, p.projecturl, p.haspositions, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
+        FROM project_tech pt2
+        JOIN(
+            SELECT * 
+            FROM projects 
+            WHERE haspositions in (%3$L)
+              and name ilike %4$L
+              and owner != %5$L
+        ) AS p ON p.id = pt2.project_id
+        JOIN (
+              SELECT ARRAY_AGG(technology_id) AS tech_id_array, project_id
+              FROM project_tech pt
+              GROUP BY project_id
+            ) AS ta ON ta.tech_id_array %2$s ARRAY[%1$L]::integer[]
+        WHERE pt2.project_id = ta.project_id
+        GROUP BY p.id, p.owner, p.name, p.description, p.projecturl, p.haspositions, p.created_at, p.updated_at
+        order by %6$s %7$s
+        offset %8$L
+        limit %9$L;
+      `,
+      technologies, match, hasPositions, searchQuery, owner, sortObj.sort, sortObj.direction, offset, itemsPerPage
+    )
 
     // console.log(sql)
     const foundProjects = await pool.query(sql)
