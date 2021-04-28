@@ -96,6 +96,17 @@ exports.createTables = async (req, res) => {
     )
 
     await client.query(
+      `CREATE TABLE IF NOT EXISTS technologies (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(100) NOT NULL UNIQUE,
+        value VARCHAR(100) NOT NULL UNIQUE,
+        status status NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`
+    )
+
+    await client.query(
       `CREATE TABLE IF NOT EXISTS languages (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
@@ -107,22 +118,11 @@ exports.createTables = async (req, res) => {
     )
 
     await client.query(
-      `CREATE TABLE IF NOT EXISTS technologies (
-        id SERIAL PRIMARY KEY,
-        label VARCHAR(100) NOT NULL UNIQUE,
-        value VARCHAR(100) NOT NULL UNIQUE,
-        status INTEGER DEFAULT 1,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );`
-    )
-
-    await client.query(
       `CREATE TABLE IF NOT EXISTS roles (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
         value VARCHAR(100) NOT NULL UNIQUE,
-        status INTEGER DEFAULT 1,
+        status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
@@ -133,7 +133,7 @@ exports.createTables = async (req, res) => {
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
         value VARCHAR(100) NOT NULL UNIQUE,
-        status INTEGER DEFAULT 1,
+        status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
@@ -288,12 +288,13 @@ exports.addTechnologies = async (req, res) => {
     const updatedTechnologies = technologies.map((tech) => {
       return [
         tech.name,
-        tech.name.toLowerCase()
+        tech.name.toLowerCase(),
+        'accepted'
       ]
     })
 
     const sql = format(`
-      INSERT INTO technologies (label, value)
+      INSERT INTO technologies (label, value, status)
       VALUES %L;
       `,
       updatedTechnologies
@@ -323,7 +324,11 @@ exports.addLanguages = async (req, res) => {
   try {
     // TODO: add email check when user routes were created
     const updatedLanguages = languages.map((lang) => {
-      return [lang.name, lang.name.toLowerCase(), lang.code]
+      return [
+        lang.name,
+        lang.name.toLowerCase(),
+        lang.code
+      ]
     })
 
     const sql = format(`
@@ -356,11 +361,15 @@ exports.addRoles = async (req, res) => {
 
   try {
     const updatedRoles = roles.map((role) => {
-      return [role.label, role.value]
+      return [
+        role.label,
+        role.value,
+        'accepted'
+      ]
     })
 
     const sql = format(`
-      INSERT INTO roles (label, value)
+      INSERT INTO roles (label, value, status)
       VALUES %L;
       `,
       updatedRoles
@@ -391,14 +400,13 @@ exports.addLevels = async (req, res) => {
     const updatedLevels = levels.map((level) => {
       return [
         level.name,
-        level.name.toLowerCase()
+        level.name.toLowerCase(),
+        'accepted'
       ]
     })
 
-    console.log(updatedLevels)
-
     const sql = format(`
-      INSERT INTO levels (label, value)
+      INSERT INTO levels (label, value, status)
       VALUES %L;
       `,
       updatedLevels

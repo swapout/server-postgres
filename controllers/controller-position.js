@@ -69,6 +69,7 @@ exports.createPosition = async (req, res) => {
       ]
     )
 
+    // Change project has positions to true
     await client.query(
       `
         UPDATE projects
@@ -156,9 +157,10 @@ exports.getPositionById = async (req, res) => {
 }
 
 exports.getPositionsByProject = async (req, res) => {
+  // Get project ID
   const projectId = req.params.id
   try {
-
+    // Get positions belonging to a project and has vacancies
     const foundPositions = await pool.query(
       `
         SELECT p.id,
@@ -183,6 +185,7 @@ exports.getPositionsByProject = async (req, res) => {
       [projectId]
     )
 
+    //If no project found
     if(foundPositions.rows.length === 0) {
       return res.status(200).json({
         status: 200,
@@ -243,23 +246,27 @@ exports.updatePositionById = async (req, res) => {
     updatedAt: moment()
   }
 
-  const foundProject = await client.query(
-    `
+  try {
+
+    // Verify that the user is the project owner
+    const foundProject = await client.query(
+      `
       SELECT id
       FROM projects
       WHERE id = $1 AND owner = $2
     `,
-    [position.projectId, userId]
-  )
+      [position.projectId, userId]
+    )
 
-  if (foundProject.rows.length === 0) {
-    return res.status(403).json({
-      status: 403,
-      message: 'You are not authorized to edit this project'
-    })
-  }
+    // If no projects found with this criteria
+    if (foundProject.rows.length === 0) {
+      return res.status(403).json({
+        status: 403,
+        message: 'You are not authorized to edit this project'
+      })
+    }
 
-  try {
+    // Update position with new values
     const updatedPosition = await client.query(
       `
         UPDATE positions
@@ -275,7 +282,9 @@ exports.updatePositionById = async (req, res) => {
       [position.title, position.description, position.vacancies, position.updatedAt, positionId, userId, position.level, position.role]
     )
 
+    // Delete old technologies relations
     await deletePositionTech(updatedPosition.rows[0].id, client)
+    // Add new technologies to relations
     updatedPosition.rows[0].technologies = await insertPositionTech(position.technologies, updatedPosition.rows[0].id, client)
 
     await client.query('COMMIT')
@@ -312,6 +321,7 @@ exports.deletePositionById = async (req, res) => {
       [positionId, userId]
     )
 
+    // If no positions got deleted
     if(deletedPosition.rows.length === 0) {
       return res.status(400).json({
         status: 400,

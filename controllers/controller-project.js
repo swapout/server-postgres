@@ -147,7 +147,8 @@ exports.getAllProjects = async (req, res) => {
   let sortObj = {}
   let technologies = req.query.technologies
   let match = req.query.match || 'any'
-  let hasPositions = req.query.hasPositions
+  // TODO: Change this back after front-end update to hasPositions
+  let hasPositions = req.query.positions
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
 
   try {
@@ -412,6 +413,7 @@ exports.deleteProjectById = async (req, res) => {
       [projectId, userId]
     )
 
+    // If no project found
     if(deletedProject.rows.length === 0) {
       return res.status(400).json({
         status: 400,

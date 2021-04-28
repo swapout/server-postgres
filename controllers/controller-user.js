@@ -156,7 +156,7 @@ exports.getUserProfile = async (req, res) => {
     // Gets user ID
     const id = req.body.decoded.id
     console.log('Token - getUserProfile:', req.body.token)
-
+    // Get user by userId
     let foundUser = await pool.query(
       `
         SELECT id, avatar, username, email, githubURL, gitlabURL, bitbucketURL, linkedinURL, bio, created_at, updated_at 
@@ -167,6 +167,7 @@ exports.getUserProfile = async (req, res) => {
       [id]
     )
 
+    // If no user found with ID
     if(foundUser.rows.length === 0) {
       return res.status(403).json({
         status: 403,
@@ -174,6 +175,7 @@ exports.getUserProfile = async (req, res) => {
       })
     }
 
+    // Simplify user
     foundUser = foundUser.rows[0]
 
     // Find user's languages and add them to foundUser
@@ -215,6 +217,7 @@ exports.deleteUser = async (req, res) => {
       [id]
     )
 
+    // If no user found
     if(deletedUser.rows.length === 0) {
       return res.status(400).json({
         status: 400,
@@ -386,6 +389,7 @@ const verifyAndCreateSocial = (user) => {
   return user
 }
 
+// Makes user response constant over all routes and camel casing response from postgres
 const normalizeUser = (user) => {
   return {
     id: user.id,
