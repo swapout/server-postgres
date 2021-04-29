@@ -1,7 +1,11 @@
 const { pool } = require('../config/db')
+const config = require('config')
 const gravatar = require('gravatar')
+const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const moment = require('moment')
+const passwordResetTemplate = require('../templates/template-passwordReset')
+const mailgun = require('mailgun-js')({apiKey: config.get('mailgun.apiKey'), domain: config.get('mailgun.domain')})
 const {
   insertUserTech,
   insertUserLang,
@@ -648,6 +652,85 @@ exports.logoutAll = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'logout from all devices was successful'
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.passwordReset = async (req, res) => {
+  // Get email from request body
+  const email = req.body.email
+  try {
+    // Check if there is a user registered with this email
+    let foundUser = await pool.query(
+      `
+        SELECT *
+        FROM users
+        WHERE email = $1
+      `,
+      [email]
+    )
+
+    // If user found with email
+    if(foundUser.rows.length > 0) {
+      // Simplify user
+      foundUser = foundUser.rows[0]
+      // Generate random hex string for reset token
+      const passwordResetToken = crypto.randomBytes(42).toString('hex')
+
+      // Delete old tokens by the user from reset tokens
+      await pool.query(
+        `
+          DELETE FROM reset_password_tokens
+          WHERE user_id = $1;
+        `,
+        [foundUser.id]
+      )
+
+      // Save generated reset token into DB
+      const savedToken = await pool.query(
+        `
+          INSERT INTO reset_password_tokens (user_id, token)
+          VALUES($1, $2)
+          RETURNING token;
+        `,
+        [foundUser.id, passwordResetToken]
+      )
+
+      // If token has been created
+      if(savedToken.rows.length > 0) {
+
+        // Prepare params for password reset templates
+        const params = {
+          preheader: 'Password reset request',
+          homeURL: 'http://localhost:3000',
+          logoURL: '#',
+          resetURL: `http://localhost:3000/${passwordResetToken}`
+        }
+
+        // Prepare data for mailgun request
+        const data = {
+          from: 'Project Zone <csecsi85@gmail.com>',
+          to: email,
+          subject: 'Password reset request',
+          html: passwordResetTemplate.body(params)
+        };
+
+        // Send email to user
+        await mailgun.messages().send(data, (error, body) => {
+          console.log(body);
+        });
+      }
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'If the user is registered, then we\'ve sent a mail with a reset link'
     })
   } catch (error) {
     console.log(error)
