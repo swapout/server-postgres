@@ -708,14 +708,14 @@ exports.passwordReset = async (req, res) => {
         // Prepare params for password reset templates
         const params = {
           preheader: 'Password reset request',
-          homeURL: 'http://localhost:3000',
+          homeURL: config.get('client.url'),
           logoURL: '#',
-          resetURL: `http://localhost:3000/${passwordResetToken}`
+          resetURL: `${config.get('client.url')}${passwordResetToken}`
         }
 
         // Prepare data for mailgun request
         const data = {
-          from: 'Project Zone <csecsi85@gmail.com>',
+          from: `${config.get('project.name')} <${config.get('project.email')}>`,
           to: email,
           subject: 'Password reset request',
           html: passwordResetTemplate.body(params)
