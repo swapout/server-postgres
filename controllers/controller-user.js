@@ -662,7 +662,7 @@ exports.logoutAll = async (req, res) => {
   }
 }
 
-exports.passwordReset = async (req, res) => {
+exports.forgotPassword = async (req, res) => {
   // Get email from request body
   const email = req.body.email
   try {
@@ -737,6 +737,95 @@ exports.passwordReset = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'If the user is registered, then we\'ve sent a mail with a reset link'
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.passwordReset = async (req, res) => {
+  // Get all the information needed to reset the password
+  const passwordResetToken = req.params.token
+  const password = req.body.password
+  const confirmPassword = req.body.confirmPassword
+  const now = moment()
+
+  try {
+
+    // If new password is too short
+    if(password.length < 8) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Password is too short'
+      })
+    }
+
+    //If new password is too long
+    if(password.length > 128) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Password is too long'
+      })
+    }
+
+    // If password and password confirm don't match
+    if(password !== confirmPassword) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Password and password confirmation don\'t match'
+      })
+    }
+
+    // Look for token token that has been issued within the last hour
+    const foundToken = await pool.query(
+      `
+        SELECT user_id
+        FROM reset_password_tokens
+        WHERE token = $1 AND created_at + interval '1 hour' > $2;
+      `,
+      [passwordResetToken, now]
+    )
+
+    // If no token found
+    if(foundToken.rows.length === 0) {
+      return res.status(401).json({
+        status: 401,
+        message: 'Your password reset token has expired or invalid, please request a new token'
+      })
+    }
+
+    // Simplify foundToken by extracting only the user ID
+    const userId = foundToken.rows[0].user_id
+
+    // Hash and salt new password
+    const hashedPassword = await bcrypt.hash(password, 11)
+
+    // Update user with new password
+    await pool.query(
+      `
+        UPDATE users
+        SET password = $1
+        WHERE id = $2;
+      `,
+      [hashedPassword, userId]
+    )
+
+    // Delete all tokens belonging to the user
+    await pool.query(
+      `
+        DELETE FROM reset_password_tokens
+        WHERE user_id = $1;
+      `,
+      [userId]
+    )
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Password has been reset'
     })
   } catch (error) {
     console.log(error)
