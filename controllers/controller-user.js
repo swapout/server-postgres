@@ -464,6 +464,98 @@ exports.updateUsername = async (req, res) => {
   }
 }
 
+exports.updateEmail = async (req, res) => {
+  const userId = req.body.decoded.id
+  const newEmail = req.body.user.newEmail.toLowerCase()
+  const password = req.body.user.password
+
+  const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
+  const isValidEmail = emailRegex.test(newEmail)
+
+  if(!isValidEmail) {
+    return res.status(403).json({
+      status: 403,
+      message: 'Email is invalid'
+    })
+  }
+
+  try {
+    let foundUser = await pool.query(
+      `
+        SELECT *
+        FROM users
+        WHERE id = $1;
+      `, [userId]
+    )
+
+    if(foundUser.rows.length === 0) {
+      return res.status(200).json({
+        status: 200,
+        message: 'No user found'
+      })
+    }
+
+    const isEmailAvailable = await pool.query(
+      `
+        SELECT id
+        FROM users
+        WHERE email = $1
+      `,
+      [newEmail]
+    )
+
+    if(isEmailAvailable.rows.length > 0) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Email is already in use'
+      })
+    }
+
+    foundUser = foundUser.rows[0]
+
+    const isPasswordMatch = await bcrypt.compare(password, foundUser.password)
+
+    if(!isPasswordMatch) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Incorrect password'
+      })
+    }
+
+    const updatedUser = await pool.query(
+      `
+        UPDATE users
+        SET email = $1
+        WHERE id = $2
+        RETURNING id, email, username
+      `,
+      [newEmail, userId]
+    )
+
+    const token = await createAndSaveBearerToken(updatedUser.rows[0], res, pool)
+
+    if(!token) {
+      return res.status(500).json({
+        status: 500,
+        message: 'Token couldn\'t be created'
+      })
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Email updated successfully',
+      token
+    })
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
 exports.logout = async (req, res) => {
   // Get user ID and token
   const { id } = req.body.decoded
