@@ -18,6 +18,8 @@ exports.createUser = async (req, res) => {
 
   try {
     let user = req.body.user
+    // Lower case email address
+    user.email = user.email.toLowerCase()
 
     // Hash password
     user.password = await bcrypt.hash(user.password, 11)
@@ -155,7 +157,7 @@ exports.getUserProfile = async (req, res) => {
   try {
     // Gets user ID
     const id = req.body.decoded.id
-    console.log('Token - getUserProfile:', req.body.token)
+
     // Get user by userId
     let foundUser = await pool.query(
       `
@@ -314,12 +316,14 @@ exports.updateUser = async (req, res) => {
 }
 
 exports.updatePassword = async (req, res) => {
-  try {
-    const userId = req.body.decoded.id
-    const oldPassword = req.body.user.oldPassword
-    const newPassword = req.body.user.newPassword
-    const newPasswordConfirm = req.body.user.newPasswordConfirm
+  // Get all fields to update the password
+  const userId = req.body.decoded.id
+  const oldPassword = req.body.user.oldPassword
+  const newPassword = req.body.user.newPassword
+  const newPasswordConfirm = req.body.user.newPasswordConfirm
 
+  try {
+    // Check if user with this ID exists
     let foundUser = await pool.query(
       `
         SELECT *
@@ -328,6 +332,7 @@ exports.updatePassword = async (req, res) => {
       `, [userId]
     )
 
+    // If no user found with ID
     if(foundUser.rows.length === 0) {
       return res.status(200).json({
         status: 200,
@@ -335,11 +340,13 @@ exports.updatePassword = async (req, res) => {
       })
     }
 
+    // Simplify user
     foundUser = foundUser.rows[0]
-    console.log(foundUser)
 
+    // Check password against the hashed password from the DB
     const isPasswordMatch = await bcrypt.compare(oldPassword, foundUser.password)
 
+    // If passwords don't match
     if(!isPasswordMatch) {
       return res.status(403).json({
         status: 403,
@@ -347,6 +354,7 @@ exports.updatePassword = async (req, res) => {
       })
     }
 
+    // If password and password confirm don't match
     if(newPassword !== newPasswordConfirm) {
       return res.status(403).json({
         status: 403,
@@ -354,6 +362,7 @@ exports.updatePassword = async (req, res) => {
       })
     }
 
+    // If new password is too short
     if(newPassword.length < 8) {
       return res.status(403).json({
         status: 403,
@@ -361,6 +370,7 @@ exports.updatePassword = async (req, res) => {
       })
     }
 
+    //If new password is too long
     if(newPassword.length > 128) {
       return res.status(403).json({
         status: 403,
@@ -368,8 +378,10 @@ exports.updatePassword = async (req, res) => {
       })
     }
 
+    // Hash and salt new password
     const hashedPassword = await bcrypt.hash(newPassword, 11)
 
+    // Update user with new password
     await pool.query(
       `
         UPDATE users
@@ -394,11 +406,13 @@ exports.updatePassword = async (req, res) => {
 }
 
 exports.updateUsername = async (req, res) => {
-  try {
-    const userId = req.body.decoded.id
-    const newUsername = req.body.user.newUsername
-    const password = req.body.user.password
+  // Get all fields to update username
+  const userId = req.body.decoded.id
+  const newUsername = req.body.user.newUsername
+  const password = req.body.user.password
 
+  try {
+    // Check if user exists
     let foundUser = await pool.query(
       `
         SELECT *
@@ -407,6 +421,7 @@ exports.updateUsername = async (req, res) => {
       `, [userId]
     )
 
+    // If no user found with ID
     if(foundUser.rows.length === 0) {
       return res.status(200).json({
         status: 200,
@@ -414,6 +429,7 @@ exports.updateUsername = async (req, res) => {
       })
     }
 
+    // Check if username is not already in use
     const isUsernameAvailable = await pool.query(
       `
         SELECT id
@@ -423,6 +439,7 @@ exports.updateUsername = async (req, res) => {
       [newUsername]
     )
 
+    // If username is already in use
     if(isUsernameAvailable.rows.length > 0) {
       return res.status(403).json({
         status: 403,
@@ -430,10 +447,13 @@ exports.updateUsername = async (req, res) => {
       })
     }
 
+    // Simplify user
     foundUser = foundUser.rows[0]
 
+    // Check password against the DB is they match
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password)
 
+    // If passwords don't match
     if(!isPasswordMatch) {
       return res.status(403).json({
         status: 403,
@@ -441,18 +461,32 @@ exports.updateUsername = async (req, res) => {
       })
     }
 
-    await pool.query(
+    // Update user and return fields needed for new token creation
+    const updatedUser = await pool.query(
       `
         UPDATE users
         SET username = $1
         WHERE id = $2
+        RETURNING id, username, email
       `,
       [newUsername, userId]
     )
 
+    // Create new bearer token
+    const token = await createAndSaveBearerToken(updatedUser.rows[0], res, pool)
+
+    // If token couldn't be created
+    if(!token) {
+      return res.status(500).json({
+        status: 500,
+        message: 'Token couldn\'t be created'
+      })
+    }
+
     return res.status(200).json({
       status: 200,
-      message: 'Username updated successfully'
+      message: 'Username updated successfully',
+      token
     })
 
   } catch (error) {
@@ -465,13 +499,16 @@ exports.updateUsername = async (req, res) => {
 }
 
 exports.updateEmail = async (req, res) => {
+  // Get necessary fields to update email
   const userId = req.body.decoded.id
   const newEmail = req.body.user.newEmail.toLowerCase()
   const password = req.body.user.password
 
+  // Check if email is a valid email format
   const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
   const isValidEmail = emailRegex.test(newEmail)
 
+  // If email is not a valid email
   if(!isValidEmail) {
     return res.status(403).json({
       status: 403,
@@ -480,6 +517,7 @@ exports.updateEmail = async (req, res) => {
   }
 
   try {
+    // Check if user exists
     let foundUser = await pool.query(
       `
         SELECT *
@@ -488,6 +526,7 @@ exports.updateEmail = async (req, res) => {
       `, [userId]
     )
 
+    // If no user found
     if(foundUser.rows.length === 0) {
       return res.status(200).json({
         status: 200,
@@ -495,6 +534,7 @@ exports.updateEmail = async (req, res) => {
       })
     }
 
+    // Check if email is not already in use
     const isEmailAvailable = await pool.query(
       `
         SELECT id
@@ -504,6 +544,7 @@ exports.updateEmail = async (req, res) => {
       [newEmail]
     )
 
+    // If email is in use
     if(isEmailAvailable.rows.length > 0) {
       return res.status(403).json({
         status: 403,
@@ -511,10 +552,13 @@ exports.updateEmail = async (req, res) => {
       })
     }
 
+    // Simplify user
     foundUser = foundUser.rows[0]
 
+    // Check password against DB user password
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password)
 
+    // If passwords don't match
     if(!isPasswordMatch) {
       return res.status(403).json({
         status: 403,
@@ -522,6 +566,7 @@ exports.updateEmail = async (req, res) => {
       })
     }
 
+    // Update user with new data and get necessary fields to generate a new token
     const updatedUser = await pool.query(
       `
         UPDATE users
@@ -532,8 +577,10 @@ exports.updateEmail = async (req, res) => {
       [newEmail, userId]
     )
 
+    // Generate a new token
     const token = await createAndSaveBearerToken(updatedUser.rows[0], res, pool)
 
+    // If something went wrong during token creation
     if(!token) {
       return res.status(500).json({
         status: 500,

@@ -3,6 +3,15 @@ const { pool } = require('../config/db')
 exports.registerUserValidation = async (req, res, next) => {
   try {
     const { user } = req.body
+    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
+    const isValidEmail = emailRegex.test(user.email)
+
+    if(!isValidEmail) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Email is invalid'
+      })
+    }
     // Create validation error object to track errors
     const validationErrors = {
       email: false,
