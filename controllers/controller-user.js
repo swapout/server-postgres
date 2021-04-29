@@ -334,6 +334,7 @@ exports.updatePassword = async (req, res) => {
         message: 'No user found'
       })
     }
+
     foundUser = foundUser.rows[0]
     console.log(foundUser)
 
@@ -342,7 +343,7 @@ exports.updatePassword = async (req, res) => {
     if(!isPasswordMatch) {
       return res.status(403).json({
         status: 403,
-        message: 'Passwords do not match'
+        message: 'Incorrect password'
       })
     }
 
@@ -381,6 +382,77 @@ exports.updatePassword = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Password updated successfully'
+    })
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.updateUsername = async (req, res) => {
+  try {
+    const userId = req.body.decoded.id
+    const newUsername = req.body.user.newUsername
+    const password = req.body.user.password
+
+    let foundUser = await pool.query(
+      `
+        SELECT *
+        FROM users
+        WHERE id = $1;
+      `, [userId]
+    )
+
+    if(foundUser.rows.length === 0) {
+      return res.status(200).json({
+        status: 200,
+        message: 'No user found'
+      })
+    }
+
+    const isUsernameAvailable = await pool.query(
+      `
+        SELECT id
+        FROM users
+        WHERE username = $1
+      `,
+      [newUsername]
+    )
+
+    if(isUsernameAvailable.rows.length > 0) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Username is already in use'
+      })
+    }
+
+    foundUser = foundUser.rows[0]
+
+    const isPasswordMatch = await bcrypt.compare(password, foundUser.password)
+
+    if(!isPasswordMatch) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Incorrect password'
+      })
+    }
+
+    await pool.query(
+      `
+        UPDATE users
+        SET username = $1
+        WHERE id = $2
+      `,
+      [newUsername, userId]
+    )
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Username updated successfully'
     })
 
   } catch (error) {
