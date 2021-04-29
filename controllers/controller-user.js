@@ -313,6 +313,85 @@ exports.updateUser = async (req, res) => {
   }
 }
 
+exports.updatePassword = async (req, res) => {
+  try {
+    const userId = req.body.decoded.id
+    const oldPassword = req.body.user.oldPassword
+    const newPassword = req.body.user.newPassword
+    const newPasswordConfirm = req.body.user.newPasswordConfirm
+
+    let foundUser = await pool.query(
+      `
+        SELECT *
+        FROM users
+        WHERE id = $1;
+      `, [userId]
+    )
+
+    if(foundUser.rows.length === 0) {
+      return res.status(200).json({
+        status: 200,
+        message: 'No user found'
+      })
+    }
+    foundUser = foundUser.rows[0]
+    console.log(foundUser)
+
+    const isPasswordMatch = await bcrypt.compare(oldPassword, foundUser.password)
+
+    if(!isPasswordMatch) {
+      return res.status(403).json({
+        status: 403,
+        message: 'Passwords do not match'
+      })
+    }
+
+    if(newPassword !== newPasswordConfirm) {
+      return res.status(403).json({
+        status: 403,
+        message: 'New password and new password confirmation don\'t match'
+      })
+    }
+
+    if(newPassword.length < 8) {
+      return res.status(403).json({
+        status: 403,
+        message: 'New password is too short'
+      })
+    }
+
+    if(newPassword.length > 128) {
+      return res.status(403).json({
+        status: 403,
+        message: 'New password is too long'
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 11)
+
+    await pool.query(
+      `
+        UPDATE users
+        SET password = $1
+        WHERE id = $2
+      `,
+      [hashedPassword, userId]
+    )
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Password updated successfully'
+    })
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
 exports.logout = async (req, res) => {
   // Get user ID and token
   const { id } = req.body.decoded
