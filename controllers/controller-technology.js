@@ -68,7 +68,7 @@ exports.requestTechnology = async (req, res) => {
 
     return res.status(201).json({
       status: 201,
-      message: 'Technology is awaiting for moderation'
+      message: 'Requested technology is awaiting for moderation'
     })
   } catch (error) {
     console.log(error)
