@@ -203,7 +203,7 @@ exports.insertPositionTech = async (technologiesArray, positionId, client) => {
       `
         SELECT id, label, value 
         FROM technologies 
-        WHERE label = ANY ($1);
+        WHERE id = ANY ($1);
       `,
       [technologiesArray]
     )

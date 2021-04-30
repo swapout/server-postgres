@@ -43,6 +43,30 @@ exports.createPosition = async (req, res) => {
       })
     }
 
+    // Check if technologies are in project technologies
+    const sql = format(
+      `
+        select *
+        from projects p
+        join (
+            select array_agg(technology_id)::text[] as tech, project_id
+            from projects_technologies_relations
+            group by project_id
+        ) as ptr on ptr.project_id = p.id
+        where ptr.tech @> array[%1$L] and p.id = %2$L;
+      `,
+      position.technologies, position.project
+    )
+    const isProjectIncludesTech = await client.query(sql)
+
+    // If technologies are not included in the project
+    if (!isProjectIncludesTech.rows.length) {
+      return res.status(401).json({
+        status: 401,
+        message: 'Technologies are not in project'
+      })
+    }
+
     // Save position to DB
     const savedPosition = await client.query(
       `
