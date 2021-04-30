@@ -233,13 +233,109 @@ exports.getPositionsByProject = async (req, res) => {
 }
 
 exports.getAllPositions = async (req, res) => {
+  const owner = req.body.decoded.id
+  const page = req.query.page || 1
+  const itemsPerPage = req.query.itemsPerPage || 9999
+  const offset = (page - 1) * itemsPerPage
+  const sort = req.query.sort
+  let sortObj = {}
+  let technologies = req.query.technologies
+  let match = req.query.match || 'any'
+  let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
+  let sql
   try {
     // TODO: Finish this after everything is setup on the project
 
+    if(technologies) {
+      technologies = technologies.split(',')
+      if(technologies[technologies.length - 1] === '') {
+        technologies.pop()
+      }
+    } else {
+      technologies = await pool.query(
+        `
+          SELECT
+          jsonb_agg(
+            id
+          ) AS technologies
+          FROM technologies
+        `
+      )
+      technologies = technologies.rows[0].technologies
+    }
+
+    switch (match) {
+      case 'any':
+        match = '&&'
+        break
+      case 'all':
+        match = '@>'
+        break
+      default:
+        match = '&&'
+    }
+
+    switch (sort) {
+      case 'nameasc':
+        sortObj = {
+          sort: 'p.name',
+          direction: 'ASC'
+        }
+        break
+      case 'namedesc':
+        sortObj = {
+          sort: 'p.name',
+          direction: 'DESC'
+        }
+        break
+      case 'dateasc':
+        sortObj = {
+          sort: 'created_at',
+          direction: 'ASC'
+        }
+        break
+      case 'datedesc':
+        sortObj = {
+          sort: 'created_at',
+          direction: 'DESC'
+        }
+        break
+      default:
+        sortObj = {
+          sort: 'created_at',
+          direction: 'DESC'
+        }
+    }
+    sql = format(
+      `
+        SELECT p.id, p.user_id, p.title, p.description, p.level, p.role, p.vacancies, p.project_id, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
+        FROM position_tech pt2
+        JOIN(
+            SELECT * 
+            FROM positions 
+            WHERE title ilike %3$L
+              and user_id != %4$L
+        ) AS p ON p.id = pt2.position_id
+        JOIN (
+              SELECT ARRAY_AGG(technology_id) AS tech_id_array, position_id
+              FROM position_tech pt
+              GROUP BY position_id
+            ) AS ta ON ta.tech_id_array %2$s ARRAY[%1$L]::integer[]
+        WHERE pt2.position_id = ta.position_id
+        GROUP BY p.id, p.user_id, p.title, p.description, p.level, p.role, p.vacancies, p.project_id, p.created_at, p.updated_at
+        order by %5$s %6$s
+        offset %7$L
+        limit %8$L;
+      `,
+      technologies, match, searchQuery, owner, sortObj.sort, sortObj.direction, offset, itemsPerPage
+    )
+
+    // console.log(sql)
+    const foundPositions = await pool.query(sql)
     return res.status(200).json({
       status: 200,
-      message: 'Get all projects with filters successful',
-      // positions: positionsByProject
+      message: 'Get all positions with filters successful',
+      positions: normalizePosition(foundPositions.rows, true)
     })
   } catch (error) {
     console.log(error)
