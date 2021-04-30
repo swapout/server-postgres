@@ -162,7 +162,7 @@ exports.fakePosition = async (req, res) => {
   try {
     while(numberOfFakePositions > 0) {
       const role = await getTableSample('roles', 1)
-      const level = faker.random.arrayElement(['junior', 'mid', 'senior', 'lead'])
+      const level = faker.random.arrayElement([1, 2, 3, 4, ])
       const randomProject = await getRandomProject()
       const projectId = randomProject.rows[0].id
       const projectOwner = randomProject.rows[0].owner
@@ -186,7 +186,7 @@ exports.fakePosition = async (req, res) => {
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           RETURNING *;
         `,
-        [position.title, position.description, position.vacancies, position.projectId, position.userId, position.createdAt, position.updatedAt, position.role.rows[0].label, position.level]
+        [position.title, position.description, position.vacancies, position.projectId, position.userId, position.createdAt, position.updatedAt, position.role.rows[0].id, position.level]
       )
 
       await pool.query(
@@ -291,7 +291,7 @@ const getTableSample = async (tableName, maxSamples) => {
 
 const getLabelArray = (arr) => {
   return arr.map((el) => {
-    return el.label
+    return el.id
   })
 }
 

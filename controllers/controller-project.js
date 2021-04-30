@@ -25,7 +25,12 @@ exports.createProject = async (req, res) => {
 
     // Add technologies to project
     savedProject.rows[0].technologies = await insertProjectTech(project.technologies, savedProject.rows[0].id, client)
-
+    if(!savedProject.rows[0].technologies) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing technologies'
+      })
+    }
     await client.query('COMMIT')
     // Success response including the project
     return res.status(201).json({
@@ -309,6 +314,13 @@ exports.updateProjectById = async (req, res) => {
     // Update project technologies relations
     await deleteProjectTech(projectId, client)
     updatedProject.rows[0].technologies = await insertProjectTech(project.technologies, projectId, client)
+    if(!updatedProject.rows[0].technologies) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing technologies'
+      })
+    }
+
     await client.query('COMMIT')
     return res.status(200).json({
       status: 200,

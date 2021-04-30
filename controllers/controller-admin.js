@@ -15,7 +15,6 @@ exports.createTables = async (req, res) => {
     await client.query(
       `
         CREATE TYPE status AS enum ('accepted', 'declined', 'pending');
-        CREATE TYPE level AS enum ('junior', 'mid', 'senior', 'lead');
       `
     )
 
@@ -85,8 +84,8 @@ exports.createTables = async (req, res) => {
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
-        level level NOT NULL DEFAULT 'junior',
-        role VARCHAR(255) NOT NULL,
+        level INTEGER NOT NULL DEFAULT 1,
+        role INTEGER NOT NULL,
         vacancies INTEGER default 1,
         project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -229,7 +228,6 @@ exports.deleteEverything = async (req, res) => {
         DROP TABLE IF EXISTS users;
         DROP TABLE IF EXISTS languages;
         DROP TYPE IF EXISTS status;
-        DROP TYPE IF EXISTS level;
       `
     )
 
