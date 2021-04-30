@@ -12,7 +12,7 @@ exports.insertUserTech = async (technologiesArray, id, client) => {
       `
         SELECT id, label, value 
         FROM technologies 
-        WHERE label = ANY ($1);
+        WHERE id = ANY ($1);
       `,
       [technologiesArray]
     )
@@ -45,7 +45,7 @@ exports.insertUserLang = async (languagesArray, id, client) => {
       `
         SELECT id, label, value 
         FROM languages 
-        WHERE label = ANY ($1);
+        WHERE id = ANY ($1);
       `,
       [languagesArray]
     )
@@ -75,7 +75,7 @@ exports.fetchUserTech = async (userId) => {
   try {
     const tech = await pool.query(
       `
-        SELECT label, value , technology_id AS id
+        SELECT label, value, technology_id AS id
         FROM user_tech AS ut
         WHERE user_id = $1;
       `, [userId]

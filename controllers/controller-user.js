@@ -58,8 +58,20 @@ exports.createUser = async (req, res) => {
 
     // Insert technologies and languages to DB and receive the formatted arrays back
     savedUser.technologies = await insertUserTech(user.technologies, savedUser.id, client)
-    savedUser.languages = await insertUserLang(user.languages, savedUser.id, client)
+    if(!savedUser.technologies) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing technologies'
+      })
+    }
 
+    savedUser.languages = await insertUserLang(user.languages, savedUser.id, client)
+    if(!savedUser.languages) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing languages'
+      })
+    }
     await client.query('COMMIT')
     // Success response including the user and token
     return res.status(201).json({
@@ -292,11 +304,22 @@ exports.updateUser = async (req, res) => {
     // Replace old languages with new ones and assign it to savedUser
     await deleteUserLang(id, client)
     updatedUser.languages = await insertUserLang(user.languages, id, client)
+    if(!updatedUser.languages) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing languages'
+      })
+    }
 
     // Replace old technologies with new ones and assign it to savedUser
     await deleteUserTech(id, client)
     updatedUser.technologies = await insertUserTech(user.technologies, id, client)
-
+    if(!updatedUser.technologies) {
+      return res.status(404).json({
+        status: 404,
+        message: 'There was a problem processing technologies'
+      })
+    }
     // If everything went well, commit the changes to the DB
     await client.query('COMMIT')
 
