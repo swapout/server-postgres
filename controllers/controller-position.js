@@ -57,6 +57,7 @@ exports.createPosition = async (req, res) => {
       `,
       position.technologies, position.project
     )
+    // Send formed query
     const isProjectIncludesTech = await client.query(sql)
 
     // If technologies are not included in the project
@@ -209,7 +210,7 @@ exports.getPositionsByProject = async (req, res) => {
       [projectId]
     )
 
-    //If no project found
+    // If no project found
     if(foundPositions.rows.length === 0) {
       return res.status(200).json({
         status: 200,
@@ -233,24 +234,38 @@ exports.getPositionsByProject = async (req, res) => {
 }
 
 exports.getAllPositions = async (req, res) => {
+  // User ID from the token
   const owner = req.body.decoded.id
+  // Page number, will be useful for pagination in the future
   const page = req.query.page || 1
+  // Max items to show per page
   const itemsPerPage = req.query.itemsPerPage || 9999
+  // Calculate how many items to skip when using with pagination
   const offset = (page - 1) * itemsPerPage
+  // Sort type
   const sort = req.query.sort
+  // Create an empty sort object for the switch statement
   let sortObj = {}
+  // A string of tech IDs separated by commas(no space between IDs after comma)
   let technologies = req.query.technologies
+  // Technology match type:
+  // 'any' - positions that include any of the technology IDs
+  //'all' - positions that include all of the technologies listed
   let match = req.query.match || 'any'
+  // Text match of position name
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
+  // Prepare the query
   let sql
   try {
-    // TODO: Finish this after everything is setup on the project
-
+    // If req.query.technologies exists or has any value
     if(technologies) {
+      //Split technology IDs string by comma
       technologies = technologies.split(',')
+      // If the last element in the tech array is an empty string, remove it
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
+      // If there are not technologies, get all tech IDs from the technologies table
     } else {
       technologies = await pool.query(
         `
@@ -261,9 +276,10 @@ exports.getAllPositions = async (req, res) => {
           FROM technologies
         `
       )
+      // Simplify technologies
       technologies = technologies.rows[0].technologies
     }
-
+    // Form match string for SQL depending on req.query.match
     switch (match) {
       case 'any':
         match = '&&'
@@ -274,7 +290,7 @@ exports.getAllPositions = async (req, res) => {
       default:
         match = '&&'
     }
-
+    // Create sort object based on the user input for the SQL query
     switch (sort) {
       case 'nameasc':
         sortObj = {
@@ -306,6 +322,8 @@ exports.getAllPositions = async (req, res) => {
           direction: 'DESC'
         }
     }
+
+    // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
     sql = format(
       `
         SELECT p.id, p.user_id, p.title, p.description, p.level, p.role, p.vacancies, p.project_id, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
@@ -331,7 +349,9 @@ exports.getAllPositions = async (req, res) => {
     )
 
     // console.log(sql)
+    // Send formed query
     const foundPositions = await pool.query(sql)
+
     return res.status(200).json({
       status: 200,
       message: 'Get all positions with filters successful',
@@ -400,6 +420,7 @@ exports.updatePositionById = async (req, res) => {
       `,
       position.technologies, position.projectId
     )
+    // Send formed query
     const isProjectIncludesTech = await client.query(sql)
 
     // If technologies are not included in the project
@@ -495,7 +516,8 @@ exports.deletePositionById = async (req, res) => {
 /////////////
 // HELPERS //
 /////////////
-
+// Make responses consistent across all responses
+// and allow switching from a single object to an array of objects
 const normalizePosition = (positionsArray, isArray = false) => {
   if(positionsArray.length === 1 && !isArray) {
     const position = positionsArray[0]
@@ -529,5 +551,4 @@ const normalizePosition = (positionsArray, isArray = false) => {
       updatedAt: position.updated_at
     }
   })
-
 }

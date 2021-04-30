@@ -144,24 +144,41 @@ exports.getProjectsByUser = async (req, res) => {
 }
 
 exports.getAllProjects = async (req, res) => {
+  // User ID from the token
   const owner = req.body.decoded.id
+  // Page number, will be useful for pagination in the future
   const page = req.query.page || 1
+  // Max items to show per page
   const itemsPerPage = req.query.itemsPerPage || 9999
+  // Calculate how many items to skip when using with pagination
   const offset = (page - 1) * itemsPerPage
+  // Sort type
   const sort = req.query.sort
+  // Create an empty sort object for the switch statement
   let sortObj = {}
+  // A string of tech IDs separated by commas(no space between IDs after comma)
   let technologies = req.query.technologies
+  // Technology match type:
+  // 'any' - projects that include any of the technology IDs
+  //'all' - projects that include all of the technologies listed
   let match = req.query.match || 'any'
+  // Filter por projects with available positions or not or any
   let hasPositions = req.query.hasPositions
+  // Text match of project name
   let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
+  // Prepare the query
   let sql
 
   try {
+    // If req.query.technologies exists or has any value
     if(technologies) {
+      //Split technology IDs string by comma
       technologies = technologies.split(',')
+      // If the last element in the tech array is an empty string, remove it
       if(technologies[technologies.length - 1] === '') {
         technologies.pop()
       }
+    // If there are not technologies, get all tech IDs from the technologies table
     } else {
       technologies = await pool.query(
         `
@@ -172,9 +189,10 @@ exports.getAllProjects = async (req, res) => {
           FROM technologies
         `
       )
+      // Simplify technologies
       technologies = technologies.rows[0].technologies
     }
-
+    // Form match string for SQL depending on req.query.match
     switch (match) {
       case 'any':
         match = '&&'
@@ -186,6 +204,7 @@ exports.getAllProjects = async (req, res) => {
         match = '&&'
     }
 
+    // Create sort object based on the user input for the SQL query
     switch (sort) {
       case 'nameasc':
         sortObj = {
@@ -217,7 +236,7 @@ exports.getAllProjects = async (req, res) => {
           direction: 'DESC'
         }
     }
-
+    // Form hasPositions for SQL query based on user input
     switch (hasPositions) {
       case 'true':
         hasPositions = [true]
@@ -229,6 +248,7 @@ exports.getAllProjects = async (req, res) => {
         hasPositions = [true, false]
     }
 
+    // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
     sql = format(
       `
         SELECT p.id, p.owner, p.name, p.description, p.projecturl, p.haspositions, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
@@ -255,6 +275,7 @@ exports.getAllProjects = async (req, res) => {
     )
 
     // console.log(sql)
+    // Send formed query
     const foundProjects = await pool.query(sql)
 
     return res.status(200).json({
@@ -382,7 +403,8 @@ exports.deleteProjectById = async (req, res) => {
 /////////////
 // HELPERS //
 /////////////
-
+// Make responses consistent across all responses
+// and allow switching from a single object to an array of objects
 const normalizeProject = (projectsArray, isArray = false) => {
   if(projectsArray.length === 1 && !isArray) {
     const project = projectsArray[0]
