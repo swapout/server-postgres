@@ -77,8 +77,8 @@ exports.fakeUser = async (req, res) => {
       }
 
       // Insert technologies and languages to DB and receive the formatted arrays back
-      createdUser.technologies = await insertUserTech(getLabelArray(technologies.rows), createdUser.id, pool)
-      createdUser.lanugaues = await insertUserLang(getLabelArray(languages.rows), createdUser.id, pool)
+      createdUser.technologies = await insertUserTech(getIdArray(technologies.rows), createdUser.id, pool)
+      createdUser.lanugaues = await insertUserLang(getIdArray(languages.rows), createdUser.id, pool)
 
       users.push(createdUser)
       numberOfFakeUsers--;
@@ -130,7 +130,7 @@ exports.fakeProject = async (req, res) => {
         [project.name, project.description, project.projectURL, userId, project.created_at, project.updated_at]
       )
       const technologies = await getTableSample('technologies', maxTech)
-      savedProject.rows[0].technologies = await insertProjectTech(getLabelArray(technologies.rows), savedProject.rows[0].id, pool)
+      savedProject.rows[0].technologies = await insertProjectTech(getIdArray(technologies.rows), savedProject.rows[0].id, pool)
       projects.push(savedProject.rows[0])
       numberOfFakeProjects--
     }
@@ -151,7 +151,6 @@ exports.fakeProject = async (req, res) => {
 
 exports.fakePosition = async (req, res) => {
   let numberOfFakePositions = req.body.fake
-  const maxTech = req.body.maxTech
   const maxDate = req.body.maxDate
   const minNumPos = req.body.minNumPos
   const maxNumPos = req.body.maxNumPos
@@ -162,7 +161,7 @@ exports.fakePosition = async (req, res) => {
   try {
     while(numberOfFakePositions > 0) {
       const role = await getTableSample('roles', 1)
-      const level = faker.random.arrayElement([1, 2, 3, 4, ])
+      const level = faker.random.arrayElement([1, 2, 3, 4])
       const randomProject = await getRandomProject()
       const projectId = randomProject.rows[0].id
       const projectOwner = randomProject.rows[0].owner
@@ -199,8 +198,19 @@ exports.fakePosition = async (req, res) => {
         [projectId]
       )
 
-      const technologies = await getTableSample('technologies', maxTech)
-      savedPosition.rows[0].technologies = await insertPositionTech(getLabelArray(technologies.rows), savedPosition.rows[0].id, pool)
+      const technologies = await pool.query(
+        `
+          SELECT array_agg(technology_id) AS tech
+          FROM projects_technologies_relations ptr
+          WHERE project_id = $1
+          GROUP BY project_id;
+        `,
+        [projectId]
+      )
+      // Get a random number and order of array elements from an array
+      const randomArray = getLimitedNumberOfRandomValuesFromArray(technologies.rows[0].tech, getNonZeroArrayLength(technologies.rows[0].tech))
+      // Save technologies for position
+      savedPosition.rows[0].technologies = await insertPositionTech(randomArray, savedPosition.rows[0].id, pool)
       positions.push(savedPosition.rows[0])
       numberOfFakePositions--
     }
@@ -289,7 +299,7 @@ const getTableSample = async (tableName, maxSamples) => {
   return pool.query(sql)
 }
 
-const getLabelArray = (arr) => {
+const getIdArray = (arr) => {
   return arr.map((el) => {
     return el.id
   })
@@ -320,4 +330,29 @@ const getRandomPosition = async () => {
       ORDER BY random() 
       LIMIT random() * 1 + 1;
     `)
+}
+
+// Get random elements from an array
+const getLimitedNumberOfRandomValuesFromArray = (arr, n) => {
+  let result = new Array(n),
+    len = arr.length,
+    taken = new Array(len);
+  if (n > len)
+    throw new RangeError("getRandom: more elements taken than available");
+  while (n--) {
+    const x = Math.floor(Math.random() * len);
+    result[n] = arr[x in taken ? taken[x] : x];
+    taken[x] = --len in taken ? taken[len] : len;
+  }
+  return result;
+}
+
+// Get a non-zero array length
+const getNonZeroArrayLength = (arr) => {
+  const length = Math.floor(Math.random() * arr.length)
+  if(length > 0) {
+    return length
+  } else {
+    return getNonZeroArrayLength(arr)
+  }
 }
