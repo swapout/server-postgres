@@ -47,9 +47,29 @@ exports.getTechnologiesByProjectId = async (req, res) => {
   }
 }
 
-exports.requestTechnology = (req, res) => {
+exports.requestTechnology = async (req, res) => {
+  const techLabel = req.body.technology
   try {
+    const savedTech = await pool.query(
+      `
+        INSERT INTO technologies (label)
+        VALUES ($1)
+        RETURNING *;
+      `,
+      [techLabel]
+    )
 
+    if(savedTech.rows.length === 0) {
+      return res.status(500).json({
+        status: 500,
+        message: 'Something went wrong'
+      })
+    }
+
+    return res.status(201).json({
+      status: 201,
+      message: 'Technology is awaiting for moderation'
+    })
   } catch (error) {
     console.log(error)
     return res.status(500).json({

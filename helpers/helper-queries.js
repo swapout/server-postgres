@@ -12,7 +12,7 @@ exports.insertUserTech = async (technologiesArray, id, client) => {
       `
         SELECT id, label 
         FROM technologies 
-        WHERE id = ANY ($1);
+        WHERE id = ANY ($1) AND status = 'accepted';
       `,
       [technologiesArray]
     )
@@ -45,7 +45,7 @@ exports.insertUserLang = async (languagesArray, id, client) => {
       `
         SELECT id, label
         FROM languages 
-        WHERE id = ANY ($1);
+        WHERE id = ANY ($1) AND status = 'accepted';
       `,
       [languagesArray]
     )
@@ -138,7 +138,7 @@ exports.insertProjectTech = async (technologiesArray, projectId, client) => {
       `
         SELECT id, label
         FROM technologies 
-        WHERE id = ANY ($1);
+        WHERE id = ANY ($1) AND status = 'accepted';
       `,
       [technologiesArray]
     )
@@ -203,7 +203,7 @@ exports.insertPositionTech = async (technologiesArray, positionId, client) => {
       `
         SELECT id, label
         FROM technologies 
-        WHERE id = ANY ($1);
+        WHERE id = ANY ($1) AND status = 'accepted';
       `,
       [technologiesArray]
     )
