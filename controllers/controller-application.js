@@ -99,12 +99,16 @@ exports.getApplicationsByPosition = async (req, res) => {
 }
 
 exports.acceptApplication = async (req, res) => {
+  const client = await pool.connect()
+  await client.query('BEGIN')
+  // Get necessary info from request
   const owner = req.body.decoded.id
   const positionId = req.body.position
   const applicant = req.body.applicant
 
   try {
-    const position = await pool.query(
+    // Check if the user is the owner of the project
+    const position = await client.query(
       `
         select vacancies, title, project_id
         from positions
@@ -112,22 +116,22 @@ exports.acceptApplication = async (req, res) => {
       `,
       [owner, positionId]
     )
-
+    // If no project found
     if(position.rows.length === 0) {
       return res.status(404).json({
         status: 404,
         message: 'Unable to find this position with this owner'
       })
     }
-
+    // If there are no more vacancies left
     if(position.rows[0].vacancies === 0) {
       return res.status(404).json({
         status: 404,
         message: 'There are no available positions left'
       })
     }
-
-    await pool.query(
+    // Deduct one from the vacancies
+    await client.query(
       `
         update positions
         set vacancies = vacancies-1
@@ -136,7 +140,8 @@ exports.acceptApplication = async (req, res) => {
       [positionId]
     )
 
-    await pool.query(
+    // Add applicant to the project as collaborator
+    await client.query(
       `
         insert into collaborators (position, user_id, project_id)
         values ($1, $2, $3)
@@ -144,7 +149,8 @@ exports.acceptApplication = async (req, res) => {
       [position.rows[0].title, applicant, position.rows[0].project_id]
     )
 
-    await pool.query(
+    // Update application in the table to accepted
+    await client.query(
       `
         update positions_applications_relations
         set status = 'accepted'
@@ -153,54 +159,63 @@ exports.acceptApplication = async (req, res) => {
       [applicant, positionId]
     )
 
-    const isRecruiting = await pool.query(
+    // Check if any of the positions has vacancies belonging to the project
+    const isRecruiting = await client.query(
       `
         select id
         from positions p 
-        where project_id = $1 and vacancies > 1;
+        where project_id = $1 and vacancies > 0;
       `,
       [position.rows[0].project_id]
     )
 
+    // If there are no vacancies left on a project change jobs available to false
     if(isRecruiting.rows.length === 0) {
-      await pool.query(
+      await client.query(
         `
         update projects
-        set jobs_available = false
+        set hasPositions = false
         where id = $1
         `,
         [position.rows[0].project_id]
       )
     }
 
+    await client.query('COMMIT')
     return res.status(200).json({
       status: 200,
       message: 'Successfully updated application'
     })
   } catch (error) {
+    await client.query('ROLLBACK')
     console.log(error)
     return res.status(500).json({
       status: 500,
       message: error.message
     })
+  } finally {
+    client.release()
   }
 }
 
 exports.declineApplication = async (req, res) => {
+  // Get all necessary info from request
   const owner = req.body.decoded.id
   const positionId = req.body.position
   const applicant = req.body.applicant
 
   try {
+    // Get the position by ID
     const position = await pool.query(
       `
-        select project_id
+        select project_id, user_id
         from positions
         where id = $2
       `,
       [positionId]
     )
 
+    // If no position found
     if(position.rows.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -208,6 +223,7 @@ exports.declineApplication = async (req, res) => {
       })
     }
 
+    // If the user is not the owner of the project
     if(position.rows[0].user_id !== owner) {
       return res.status(401).json({
         status: 401,
@@ -215,6 +231,7 @@ exports.declineApplication = async (req, res) => {
       })
     }
 
+    // Update application to declined
     const updatedApplication = await pool.query(
       `
         update positions_applications_relations
@@ -225,6 +242,7 @@ exports.declineApplication = async (req, res) => {
       [applicant, positionId]
     )
 
+    // If something went wrong
     if (updatedApplication.rows.length === 0) {
       return res.status(500).json({
         status: 500,
@@ -246,10 +264,12 @@ exports.declineApplication = async (req, res) => {
 }
 
 exports.revokeApplication = async (req, res) => {
+  //Get necessary info from request
   const userId = req.body.decoded.id
   const applicationId = req.query.id
 
   try {
+    // Get the application by application ID
     let application = await pool.query(
       `
         SELECT *
@@ -258,9 +278,10 @@ exports.revokeApplication = async (req, res) => {
       `,
       [applicationId]
     )
-
+    // Simplify application
     application = application.rows
 
+    // If no application fount
     if (application.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -268,6 +289,7 @@ exports.revokeApplication = async (req, res) => {
       })
     }
 
+    // Check if the user created the application
     if (application[0].user_id !== userId) {
       return res.status(401).json({
         status: 401,
@@ -275,6 +297,7 @@ exports.revokeApplication = async (req, res) => {
       })
     }
 
+    // Delete the application
     await pool.query(
       `
        DELETE FROM positions_applications_relations
