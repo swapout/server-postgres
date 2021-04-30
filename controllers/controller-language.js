@@ -4,7 +4,7 @@ exports.listLanguages = async (req, res) => {
   try {
     let languages = await pool.query(
       `
-        SELECT label, value, id FROM languages
+        SELECT label, id FROM languages
       `
     )
 

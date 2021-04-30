@@ -5,7 +5,9 @@ exports.listTechnologies = async (req, res) => {
   try {
     let technologies = await pool.query(
       `
-        SELECT label, value, id FROM technologies
+        SELECT label, id 
+        FROM technologies
+        WHERE status = 'accepted'
       `
     )
 
@@ -36,6 +38,18 @@ exports.getTechnologiesByProjectId = async (req, res) => {
       message: 'Successfully listed technologies for this project',
       technologies: tech
     })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      status: 500,
+      message: error.message
+    })
+  }
+}
+
+exports.requestTechnology = (req, res) => {
+  try {
+
   } catch (error) {
     console.log(error)
     return res.status(500).json({

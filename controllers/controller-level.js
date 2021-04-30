@@ -4,7 +4,9 @@ exports.listLevels = async (req, res) => {
   try {
     let levels = await pool.query(
       `
-        SELECT label, value, id FROM levels
+        SELECT label, id 
+        FROM levels
+        WHERE status = 'accepted'
       `
     )
 

@@ -288,7 +288,7 @@ exports.fakeApplication = async (req, res) => {
 const getTableSample = async (tableName, maxSamples) => {
   let sql = format(
     `
-      SELECT id, label, value 
+      SELECT id, label
       FROM %1$I 
       ORDER BY random() 
       LIMIT random() * %2$L + 1;

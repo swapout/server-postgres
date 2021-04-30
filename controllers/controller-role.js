@@ -4,7 +4,9 @@ exports.listRoles = async (req, res) => {
   try {
     let roles = await pool.query(
       `
-        SELECT label, value, id FROM roles
+        SELECT label, id 
+        FROM roles
+        WHERE status = 'accepted'
       `
     )
 

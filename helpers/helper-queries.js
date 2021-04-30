@@ -10,7 +10,7 @@ exports.insertUserTech = async (technologiesArray, id, client) => {
     // Gets technologies corresponding of the array of user technologies
     const technologies = await client.query(
       `
-        SELECT id, label, value 
+        SELECT id, label 
         FROM technologies 
         WHERE id = ANY ($1);
       `,
@@ -43,7 +43,7 @@ exports.insertUserLang = async (languagesArray, id, client) => {
     // Gets languages corresponding of the array of user languages
     const languages = await client.query(
       `
-        SELECT id, label, value 
+        SELECT id, label
         FROM languages 
         WHERE id = ANY ($1);
       `,
@@ -75,7 +75,7 @@ exports.fetchUserTech = async (userId) => {
   try {
     const tech = await pool.query(
       `
-        SELECT label, value, technology_id AS id
+        SELECT label, technology_id AS id
         FROM user_tech AS ut
         WHERE user_id = $1;
       `, [userId]
@@ -90,7 +90,7 @@ exports.fetchUserLang = async (userId) => {
   try {
     const lang = await pool.query(
       `
-        SELECT label, value, language_id AS id
+        SELECT label, language_id AS id
         FROM user_lang AS ulr
         WHERE user_id = $1;
       `, [userId]
@@ -136,7 +136,7 @@ exports.insertProjectTech = async (technologiesArray, projectId, client) => {
     // Gets technologies corresponding of the array of project technologies
     const technologies = await client.query(
       `
-        SELECT id, label, value 
+        SELECT id, label
         FROM technologies 
         WHERE id = ANY ($1);
       `,
@@ -168,7 +168,7 @@ exports.fetchProjectTech = async (projectId) => {
   try {
     const tech = await pool.query(
       `
-        SELECT label, value, technology_id AS id
+        SELECT label, technology_id AS id
         FROM project_tech AS pt
         WHERE project_id = $1;
       `, [projectId]
@@ -201,7 +201,7 @@ exports.insertPositionTech = async (technologiesArray, positionId, client) => {
     // Gets technologies corresponding of the array of project technologies
     const technologies = await client.query(
       `
-        SELECT id, label, value 
+        SELECT id, label
         FROM technologies 
         WHERE id = ANY ($1);
       `,
@@ -233,7 +233,7 @@ exports.fetchPositionTech = async (positionId) => {
   try {
     const tech = await pool.query(
       `
-        SELECT label, value, technology_id AS id
+        SELECT label, technology_id AS id
         FROM position_tech AS pt
         WHERE position_id = $1;
       `, [positionId]

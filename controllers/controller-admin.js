@@ -98,7 +98,6 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS technologies (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
-        value VARCHAR(100) NOT NULL UNIQUE,
         status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -109,7 +108,6 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS languages (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
-        value VARCHAR(100) NOT NULL UNIQUE,
         code VARCHAR(2) NOT NULL UNIQUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -120,7 +118,6 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS roles (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
-        value VARCHAR(100) NOT NULL UNIQUE,
         status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -131,7 +128,6 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS levels (
         id SERIAL PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
-        value VARCHAR(100) NOT NULL UNIQUE,
         status status NOT NULL DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -286,13 +282,12 @@ exports.addTechnologies = async (req, res) => {
     const updatedTechnologies = technologies.map((tech) => {
       return [
         tech.name,
-        tech.name.toLowerCase(),
         'accepted'
       ]
     })
 
     const sql = format(`
-      INSERT INTO technologies (label, value, status)
+      INSERT INTO technologies (label, status)
       VALUES %L;
       `,
       updatedTechnologies
@@ -324,13 +319,12 @@ exports.addLanguages = async (req, res) => {
     const updatedLanguages = languages.map((lang) => {
       return [
         lang.name,
-        lang.name.toLowerCase(),
         lang.code
       ]
     })
 
     const sql = format(`
-      INSERT INTO languages (label, value, code)
+      INSERT INTO languages (label, code)
       VALUES %L;
       `,
       updatedLanguages
@@ -361,13 +355,12 @@ exports.addRoles = async (req, res) => {
     const updatedRoles = roles.map((role) => {
       return [
         role.label,
-        role.value,
         'accepted'
       ]
     })
 
     const sql = format(`
-      INSERT INTO roles (label, value, status)
+      INSERT INTO roles (label, status)
       VALUES %L;
       `,
       updatedRoles
@@ -398,13 +391,12 @@ exports.addLevels = async (req, res) => {
     const updatedLevels = levels.map((level) => {
       return [
         level.name,
-        level.name.toLowerCase(),
         'accepted'
       ]
     })
 
     const sql = format(`
-      INSERT INTO levels (label, value, status)
+      INSERT INTO levels (label, status)
       VALUES %L;
       `,
       updatedLevels
@@ -436,7 +428,7 @@ exports.createViews = async (req, res) => {
     await client.query(
       `
         CREATE VIEW user_lang AS
-          SELECT label, value, l.id AS language_id, u.id AS user_id, l.code
+          SELECT label, l.id AS language_id, u.id AS user_id, l.code
           FROM users_languages_relations AS ulr
           JOIN languages AS l ON l.id = ulr.language_id
           JOIN users AS u ON u.id = ulr.user_id;
@@ -445,7 +437,7 @@ exports.createViews = async (req, res) => {
     await client.query(
       `
         CREATE VIEW user_tech AS
-          SELECT label, value, t.id AS technology_id, u.id AS user_id, t.status 
+          SELECT label, t.id AS technology_id, u.id AS user_id, t.status 
           FROM users_technologies_relations AS utr
           JOIN technologies AS t ON t.id = utr.technology_id
           JOIN users AS u ON u.id = utr.user_id;
@@ -455,7 +447,7 @@ exports.createViews = async (req, res) => {
     await client.query(
       `
         CREATE VIEW project_tech AS
-          SELECT label, value, t.id AS technology_id, p.id AS project_id 
+          SELECT label, t.id AS technology_id, p.id AS project_id 
           FROM projects_technologies_relations AS ptr
           JOIN technologies AS t ON t.id = ptr.technology_id
           JOIN projects AS p ON p.id = ptr.project_id;
@@ -465,7 +457,7 @@ exports.createViews = async (req, res) => {
     await client.query(
       `
         CREATE VIEW position_tech AS
-          SELECT label, value, t.id AS technology_id, p.id AS position_id 
+          SELECT label, t.id AS technology_id, p.id AS position_id 
           FROM positions_technologies_relations AS ptr
           JOIN technologies AS t ON t.id = ptr.technology_id
           JOIN positions AS p ON p.id = ptr.position_id;

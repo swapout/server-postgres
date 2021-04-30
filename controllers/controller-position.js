@@ -147,8 +147,7 @@ exports.getPositionById = async (req, res) => {
           p.updated_at,
           jsonb_agg(
             jsonb_build_object(
-              'label', pt.label, 
-              'value', pt.value, 
+              'label', pt.label,
               'id', pt.technology_id
             )
           ) AS technologies
