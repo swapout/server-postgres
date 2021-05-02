@@ -45,7 +45,7 @@ exports.insertUserLang = async (languagesArray, id, client) => {
       `
         SELECT id, label
         FROM languages 
-        WHERE id = ANY ($1) AND status = 'accepted';
+        WHERE id = ANY ($1);
       `,
       [languagesArray]
     )

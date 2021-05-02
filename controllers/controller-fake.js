@@ -21,17 +21,17 @@ const { createAndSaveBearerToken } = require('../helpers/helper-tokens')
 
 exports.fakeUser = async (req, res) => {
   let numberOfFakeUsers = req.body.fake
-  const hash = req.body.hash
-  const bearer = req.body.bearer
-  const bio = req.body.bio
-  const minDate = req.body.minDate
-  const maxDate = req.body.maxDate
-  const maxTech = req.body.maxTech
-  const maxLang = req.body.maxLang
-  const githubURL = req.body.githubURL
-  const gitlabURL = req.body.gitlabURL
-  const bitbucketURL = req.body.bitbucketURL
-  const linkedinURL = req.body.linkedinURL
+  const hash = req.body.hash || true
+  const bearer = req.body.bearer || true
+  const bio = req.body.bio || true
+  const minDate = req.body.minDate || '2015-12-31'
+  const maxDate = req.body.maxDate || '2021-05-01'
+  const maxTech = req.body.maxTech || 7
+  const maxLang = req.body.maxLang || 4
+  const githubURL = req.body.githubURL || true
+  const gitlabURL = req.body.gitlabURL || true
+  const bitbucketURL = req.body.bitbucketURL || true
+  const linkedinURL = req.body.linkedinURL || true
   let users = []
 
   try {
