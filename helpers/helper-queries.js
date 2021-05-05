@@ -256,11 +256,3 @@ exports.deletePositionTech = async (positionId, client) => {
     console.log('deletePositionTech error: ', error.message)
   }
 }
-
-exports.fetchRoleLabels = async() => {
-  try {
-
-  } catch (error) {
-    console.log('fetchRoleLabels error: ', error.message)
-  }
-}
