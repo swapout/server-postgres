@@ -138,8 +138,8 @@ exports.getPositionById = async (req, res) => {
           p.id,
           p.title, 
           p.description,
-          p.level,
-          p.role,
+          l.label as level,
+          r.label as role,
           p.vacancies,
           p.project_id,
           p.user_id,
@@ -153,8 +153,10 @@ exports.getPositionById = async (req, res) => {
           ) AS technologies
         FROM position_tech AS pt
         JOIN positions AS p ON p.id = pt.position_id
+        JOIN roles AS r ON r.id = p.role
+        JOIN levels AS l ON l.id = p.level
         WHERE p.id = $1 and p.vacancies > 0
-        GROUP BY p.title, p.id;
+        GROUP BY p.title, p.id,  r.label, l.label;
       `,
       [positionId]
     )
@@ -190,8 +192,8 @@ exports.getPositionsByProject = async (req, res) => {
         SELECT p.id,
                p.title,
                p.description,
-               p.level,
-               p.role,
+               l.label as level,
+               r.label as role,
                p.vacancies,
                p.project_id,
                p.user_id,
@@ -202,8 +204,10 @@ exports.getPositionsByProject = async (req, res) => {
                 ) AS technologies
         FROM positions p
         JOIN position_tech AS pt ON pt.position_id = p.id
+        JOIN roles AS r ON r.id = p.role
+        JOIN levels AS l ON l.id = p.level
         WHERE p.project_id = $1 and p.vacancies > 0
-        GROUP BY p.title, p.id
+        GROUP BY p.title, p.id, r.label, l.label
         ORDER BY title ASC;
       `,
       [projectId]
@@ -325,7 +329,7 @@ exports.getAllPositions = async (req, res) => {
     // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
     sql = format(
       `
-        SELECT p.id, p.user_id, p.title, p.description, p.level, p.role, p.vacancies, p.project_id, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
+        SELECT p.id, p.user_id, p.title, p.description, l.label as level, r.label as role, p.vacancies, p.project_id, jsonb_agg(pt2.label) AS technologies, p.created_at, p.updated_at 
         FROM position_tech pt2
         JOIN(
             SELECT * 
@@ -338,8 +342,10 @@ exports.getAllPositions = async (req, res) => {
               FROM position_tech pt
               GROUP BY position_id
             ) AS ta ON ta.tech_id_array %2$s ARRAY[%1$L]::integer[]
+        JOIN roles AS r ON r.id = p.role
+        JOIN levels AS l ON l.id = p.level
         WHERE pt2.position_id = ta.position_id
-        GROUP BY p.id, p.user_id, p.title, p.description, p.level, p.role, p.vacancies, p.project_id, p.created_at, p.updated_at
+        GROUP BY p.id, p.user_id, p.title, p.description, l.label, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
         order by %5$s %6$s
         offset %7$L
         limit %8$L;
