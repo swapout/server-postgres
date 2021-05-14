@@ -78,10 +78,26 @@ exports.getProjectById = async (req, res) => {
     // Get technologies belonging to the project
     foundProject.rows[0].technologies = await fetchProjectTech(projectId)
 
+    const collaborators = await pool.query(
+      `
+          select u.id, u.email, u.username, u.avatar, u.bio, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl, jsonb_agg( distinct ut.label) as technologies, jsonb_agg( distinct ul.label) as languages
+          from collaborators c
+          join users u on u.id = c.user_id 
+          join user_tech ut on ut.user_id = c.user_id
+          join user_lang ul on ul.user_id  = c.user_id 
+          where c.project_id = $1
+          group by u.id;
+      `,
+      [projectId]
+    )
+    const project = normalizeProject(foundProject.rows)
+    project.collaborators = normalizeCollaborators(collaborators.rows)
+
     return res.status(200).json({
       status: 200,
       message: 'Successfully retrieved project',
-      project: normalizeProject(foundProject.rows)
+      project
+
     })
   } catch (error) {
     console.log(error.message)
@@ -434,5 +450,42 @@ const normalizeProject = (projectsArray, isArray = false) => {
       updatedAt: project.updated_at
     }
   })
+}
 
+const normalizeCollaborators = (collaborators, isArray = false) => {
+  if (collaborators.length === 1 && !isArray) {
+    const collaborator = collaborators[0]
+    return {
+      id: collaborator.id,
+      avatar: collaborator.avatar,
+      username: collaborator.username,
+      email: collaborator.email,
+      githubURL: collaborator.githuburl,
+      gitlabURL: collaborator.gitlaburl,
+      bitbucketURL: collaborator.bitbucketurl,
+      linkedinURL: collaborator.linkedinurl,
+      bio: collaborator.bio,
+      createdAt: collaborator.created_at,
+      updatedAt: collaborator.updated_at,
+      languages: collaborator.languages,
+      technologies: collaborator.technologies
+    }
+  }
+  return collaborators.map((collaborator) => {
+    return {
+      id: collaborator.id,
+      avatar: collaborator.avatar,
+      username: collaborator.username,
+      email: collaborator.email,
+      githubURL: collaborator.githuburl,
+      gitlabURL: collaborator.gitlaburl,
+      bitbucketURL: collaborator.bitbucketurl,
+      linkedinURL: collaborator.linkedinurl,
+      bio: collaborator.bio,
+      createdAt: collaborator.created_at,
+      updatedAt: collaborator.updated_at,
+      languages: collaborator.languages,
+      technologies: collaborator.technologies
+    }
+  })
 }
