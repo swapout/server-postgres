@@ -189,26 +189,29 @@ exports.getPositionsByProject = async (req, res) => {
     // Get positions belonging to a project and has vacancies
     const foundPositions = await pool.query(
       `
-        SELECT p.id,
-               p.title,
-               p.description,
-               l.label as level,
-               r.label as role,
-               p.vacancies,
-               p.project_id,
-               p.user_id,
-               p.created_at,
-               p.updated_at,
-               jsonb_agg(
-                  pt.label
-                ) AS technologies
-        FROM positions p
-        JOIN position_tech AS pt ON pt.position_id = p.id
-        JOIN roles AS r ON r.id = p.role
-        JOIN levels AS l ON l.id = p.level
-        WHERE p.project_id = $1 and p.vacancies > 0
-        GROUP BY p.title, p.id, r.label, l.label
-        ORDER BY title ASC;
+          SELECT p.id,
+                 p.title,
+                 p.description,
+                 l.label as level,
+                 r.label as role,
+                 p.vacancies,
+                 p.project_id,
+                 p.user_id,
+                 p.created_at,
+                 p.updated_at,
+                 jsonb_agg(
+                 distinct
+                    pt.label
+                  ) AS technologies,
+                 count( distinct par.id) as applicants
+          FROM positions p
+          JOIN position_tech AS pt ON pt.position_id = p.id
+          JOIN roles AS r ON r.id = p.role
+          JOIN levels AS l ON l.id = p.level
+          join positions_applications_relations par on p.id = par.position_id 
+          WHERE p.project_id = $1 and p.vacancies > 0 and par."status" = 'pending'
+          GROUP BY p.title, p.id, r.label, l.label
+          ORDER BY title ASC;
       `,
       [projectId]
     )
@@ -533,6 +536,7 @@ const normalizePosition = (positionsArray, isArray = false) => {
       role: position.role,
       level: position.level,
       vacancies: position.vacancies,
+      applicants: position.applicants,
       projectId: position.project_id,
       userId: position.user_id,
       technologies: position.technologies,
@@ -549,6 +553,7 @@ const normalizePosition = (positionsArray, isArray = false) => {
       role: position.role,
       level: position.level,
       vacancies: position.vacancies,
+      applicants: position.applicants * 1,
       projectId: position.project_id,
       userId: position.user_id,
       technologies: position.technologies,
