@@ -510,9 +510,22 @@ exports.updateUsername = async (req, res) => {
       })
     }
 
+    // Delete all bearer_tokens except the newly created one,
+    // since the old tokens have outdated information
+    await pool.query(
+      `
+      delete from bearer_tokens
+      where user_id = $1 and bearer_token != $2
+      `,
+      [userId, token]
+    )
+
     return res.status(200).json({
       status: 200,
       message: 'Username updated successfully',
+      user: {
+        username: updatedUser.rows[0].username,
+      },
       token
     })
 
@@ -615,9 +628,22 @@ exports.updateEmail = async (req, res) => {
       })
     }
 
+    // Delete all bearer_tokens except the newly created one,
+    // since the old tokens have outdated information
+    await pool.query(
+      `
+      delete from bearer_tokens
+      where user_id = $1 and bearer_token != $2
+      `,
+      [userId, token]
+    )
+
     return res.status(200).json({
       status: 200,
       message: 'Email updated successfully',
+      user: {
+        email: updatedUser.rows[0].email,
+      },
       token
     })
 
