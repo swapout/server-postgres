@@ -345,7 +345,7 @@ exports.updateUser = async (req, res) => {
 exports.updatePassword = async (req, res) => {
   // Get all fields to update the password
   const userId = req.body.decoded.id
-  const oldPassword = req.body.user.oldPassword
+  const currentPassword = req.body.user.currentPassword
   const newPassword = req.body.user.newPassword
   const newPasswordConfirm = req.body.user.newPasswordConfirm
 
@@ -371,7 +371,7 @@ exports.updatePassword = async (req, res) => {
     foundUser = foundUser.rows[0]
 
     // Check password against the hashed password from the DB
-    const isPasswordMatch = await bcrypt.compare(oldPassword, foundUser.password)
+    const isPasswordMatch = await bcrypt.compare(currentPassword, foundUser.password)
 
     // If passwords don't match
     if(!isPasswordMatch) {
