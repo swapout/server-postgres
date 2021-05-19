@@ -416,6 +416,65 @@ exports.deleteProjectById = async (req, res) => {
   }
 }
 
+exports.removeCollaborator = async (req, res) => {
+  // Project owner ID from the bearer token
+  const userId = req.body.decoded.id
+  // Project ID from req.body
+  const projectId = req.body.projectId
+  // User ID to be removed from the collaborators table
+  const collaboratorId = req.body.collaboratorId
+  try {
+    // Check if the user making the request is the project owner
+    const isProjectOwner = await pool.query(
+      `
+        select id
+        from projects
+        where id = $1 and owner = $2;
+      `,
+      [projectId, userId]
+    )
+
+    // If user isn't the project owner
+    if(isProjectOwner.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'You are not the project owner'
+      })
+    }
+
+    // Delete collaborator from collaborators table
+    const deletedCollaborator = await pool.query(
+      `
+        delete from collaborators
+        where user_id = $1 and project_id = $2
+        returning id;
+      `,
+      [collaboratorId, projectId]
+    )
+
+    // If didn't find collaborator for the project ID
+    if(deletedCollaborator.rows.length === 0) {
+      return res. status(400).json({
+        status: 400,
+        message: 'Collaborator doesn\'t exists',
+      })
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Successfully deleted collaborator'
+    })
+
+  } catch (error) {
+  //  Error handling
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
+
 /////////////
 // HELPERS //
 /////////////
