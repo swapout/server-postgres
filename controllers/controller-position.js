@@ -185,6 +185,7 @@ exports.getPositionById = async (req, res) => {
 exports.getPositionsByProject = async (req, res) => {
   // Get project ID
   const projectId = req.params.id
+
   try {
     // Get positions belonging to a project and has vacancies
     const foundPositions = await pool.query(
@@ -208,8 +209,8 @@ exports.getPositionsByProject = async (req, res) => {
           JOIN position_tech AS pt ON pt.position_id = p.id
           JOIN roles AS r ON r.id = p.role
           JOIN levels AS l ON l.id = p.level
-          join positions_applications_relations par on p.id = par.position_id 
-          WHERE p.project_id = $1 and p.vacancies > 0 and par."status" = 'pending'
+          full join positions_applications_relations par on p.id = par.position_id 
+          WHERE p.project_id = $1 and p.vacancies > 0
           GROUP BY p.title, p.id, r.label, l.label
           ORDER BY title ASC;
       `,
