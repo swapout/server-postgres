@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 
 const { createUser, loginUser, getUserProfile, deleteUser, updateUser, updateUsername, updateEmail, updatePassword, logout, logoutAll, forgotPassword, passwordReset } = require('../controllers/controller-user')
-const { registerUserValidation } = require('../middlewares/validation')
+const { registerUserValidation } = require('../middlewares/validations/validation-user')
 const { auth } = require('../middlewares/middleware-auth')
 
 router.route('/register').post(registerUserValidation, createUser)

@@ -10,10 +10,11 @@ const {
 } = require('../controllers/controller-position')
 
 const { auth } = require('../middlewares/middleware-auth')
+const { createPositionValidation } = require('../middlewares/validations/validation-position')
 
 const router = express.Router()
 
-router.post('/', auth, createPosition)
+router.post('/', auth, createPositionValidation, createPosition)
 router.get('/', auth, getAllPositions)
 router.get('/project/:id', auth, getPositionsByProject)
 router.get('/:id', auth, getPositionById)

@@ -10,7 +10,7 @@ const {
 } = require('../controllers/controller-project')
 
 const { auth } = require('../middlewares/middleware-auth')
-const { createProjectValidation } = require('../middlewares/validation')
+const { createProjectValidation } = require('../middlewares/validations/validation-project')
 
 const router = express.Router()
 

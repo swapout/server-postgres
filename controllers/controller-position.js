@@ -24,50 +24,6 @@ exports.createPosition = async (req, res) => {
 
   try {
 
-    // Verify if decoded user is the actual project owner
-    const isProjectOwner = await client.query(
-      `
-        SELECT owner
-        FROM projects
-        WHERE owner = $1 and id = $2
-        LIMIT 1
-      `,
-      [userId, position.project]
-    )
-
-    // If the user is not the project owner
-    if(isProjectOwner.rows.length < 1) {
-      return res.status(400).json({
-        status: 400,
-        message: 'No permission to add position to this project'
-      })
-    }
-
-    // Check if technologies are in project technologies
-    const sql = format(
-      `
-        select *
-        from projects p
-        join (
-            select array_agg(technology_id)::text[] as tech, project_id
-            from projects_technologies_relations
-            group by project_id
-        ) as ptr on ptr.project_id = p.id
-        where ptr.tech @> array[%1$L] and p.id = %2$L;
-      `,
-      position.technologies, position.project
-    )
-    // Send formed query
-    const isProjectIncludesTech = await client.query(sql)
-
-    // If technologies are not included in the project
-    if (!isProjectIncludesTech.rows.length) {
-      return res.status(401).json({
-        status: 401,
-        message: 'Technologies are not in project'
-      })
-    }
-
     // Save position to DB
     const savedPosition = await client.query(
       `
