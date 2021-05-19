@@ -8,11 +8,13 @@ const {
   updateProjectById,
   deleteProjectById
 } = require('../controllers/controller-project')
+
 const { auth } = require('../middlewares/middleware-auth')
+const { createProjectValidation } = require('../middlewares/validation')
 
 const router = express.Router()
 
-router.post('/', auth, createProject)
+router.post('/', auth, createProjectValidation, createProject)
 router.get('/', auth, getAllProjects)
 router.get('/user', auth, getProjectsByUser)
 router.get('/:id', auth, getProjectById)
