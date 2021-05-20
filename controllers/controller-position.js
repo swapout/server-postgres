@@ -160,12 +160,12 @@ exports.getPositionsByProject = async (req, res) => {
                  distinct
                     pt.label
                   ) AS technologies,
-                 count( distinct par.id) as applicants
+                 count(distinct par.id) as applicants
           FROM positions p
           JOIN position_tech AS pt ON pt.position_id = p.id
           JOIN roles AS r ON r.id = p.role
           JOIN levels AS l ON l.id = p.level
-          full join positions_applications_relations par on p.id = par.position_id 
+          full join (select * from positions_applications_relations where status = 'pending') par on p.id = par.position_id 
           WHERE p.project_id = $1 and p.vacancies > 0
           GROUP BY p.title, p.id, r.label, l.label
           ORDER BY title ASC;
