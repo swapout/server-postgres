@@ -126,7 +126,10 @@ exports.getProjectsByUser = async (req, res) => {
           p.created_at,
           p.updated_at,
           jsonb_agg(
-           pt.label
+            jsonb_build_object(
+              'label', pt.label,
+              'id', pt.technology_id
+            )
           ) AS technologies
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
@@ -267,7 +270,12 @@ exports.getAllProjects = async (req, res) => {
     // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
     sql = format(
       `
-        SELECT p.id, p.owner, p.name, p.description, p.projecturl, p.haspositions, jsonb_agg(label) AS technologies, p.created_at, p.updated_at 
+        SELECT p.id, p.owner, p.name, p.description, p.projecturl, p.haspositions, jsonb_agg(
+            jsonb_build_object(
+              'label', label,
+              'id', technology_id
+            )
+          ) AS technologies, p.created_at, p.updated_at 
         FROM project_tech pt2
         JOIN(
             SELECT * 
