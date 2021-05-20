@@ -91,7 +91,7 @@ exports.getProjectById = async (req, res) => {
       [projectId]
     )
     const project = normalizeProject(foundProject.rows)
-    project.collaborators = normalizeCollaborators(collaborators.rows)
+    project.collaborators = normalizeCollaborators(collaborators.rows, true)
 
     return res.status(200).json({
       status: 200,
