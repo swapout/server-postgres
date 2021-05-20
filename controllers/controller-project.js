@@ -475,6 +475,44 @@ exports.removeCollaborator = async (req, res) => {
   }
 }
 
+exports.quitCollaborator = async (req, res) => {
+  // Get user from the token
+  const userId = req.body.decoded.id
+  // Get project ID from the request
+  const projectId = req.body.projectId
+  try {
+    // Delete user from collaborators table
+    const deletedCollaborator = await pool.query(
+      `
+        delete from collaborators
+        where project_id = $1 and user_id = $2
+        returning id;
+      `,
+      [projectId, userId]
+    )
+
+    // If nothing has been deleted from table
+    if(deletedCollaborator.rows.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: 'No collaborator found on this project'
+      })
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Collaborator successfully removed from project'
+    })
+
+  } catch (error) {
+    //  Error handling
+    console.log(error.message)
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error'
+    })
+  }
+}
 /////////////
 // HELPERS //
 /////////////

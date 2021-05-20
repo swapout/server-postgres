@@ -7,7 +7,8 @@ const {
   getProjectsByUser,
   updateProjectById,
   deleteProjectById,
-  removeCollaborator
+  removeCollaborator,
+  quitCollaborator
 } = require('../controllers/controller-project')
 
 const { auth } = require('../middlewares/middleware-auth')
@@ -21,6 +22,7 @@ router.get('/user', auth, getProjectsByUser)
 router.get('/:id', auth, getProjectById)
 router.patch('/:id', auth, updateProjectById)
 router.delete('/:id', auth, deleteProjectById)
-router.post('/collaborator', auth, removeCollaborator)
+router.post('/collaborator/remove', auth, removeCollaborator)
+router.post('/collaborator/leave', auth, quitCollaborator)
 
 module.exports = router
