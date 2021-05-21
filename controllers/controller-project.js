@@ -130,14 +130,27 @@ exports.getProjectsByUser = async (req, res) => {
               'label', pt.label,
               'id', pt.technology_id
             )
-          ) AS technologies
+          ) AS technologies,
+          jsonb_strip_nulls(
+            jsonb_agg( 
+              distinct jsonb_build_object( 
+                'username', u.username,
+                'id', u.id,
+                'avatar', u.avatar
+              )
+            )
+          ) as collaborators
         FROM projects AS p
         JOIN project_tech AS pt ON pt.project_id = p.id
+        full join collaborators c on c.project_id = p.id
+        full join users u on c.user_id = u.id
         WHERE p.owner = $1
         GROUP BY p.name, p.id;
       `,
       [userId]
     )
+
+    foundProjects.rows = stripEmptyObjectsFromArray(foundProjects.rows)
 
     // If no projects found
     if(foundProjects.rows.length === 0) {
@@ -537,6 +550,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       hasPositions: project.haspositions,
       owner: project.owner,
       technologies: project.technologies,
+      collaborators: project.collaborators,
       createdAt: project.created_at,
       updatedAt: project.updated_at
     }
@@ -551,6 +565,7 @@ const normalizeProject = (projectsArray, isArray = false) => {
       hasPositions: project.haspositions,
       owner: project.owner,
       technologies: project.technologies,
+      collaborators: project.collaborators,
       createdAt: project.created_at,
       updatedAt: project.updated_at
     }
@@ -593,4 +608,12 @@ const normalizeCollaborators = (collaborators, isArray = false) => {
       technologies: collaborator.technologies
     }
   })
+}
+
+const stripEmptyObjectsFromArray = (array) => {
+  return array.map((item) => {
+    item.collaborators = item.collaborators.filter(el => Object.keys(el).length)
+    return item
+  })
+
 }
