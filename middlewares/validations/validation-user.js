@@ -1,6 +1,9 @@
+const path = require('path')
+const { logger } = require('../../helpers/helper-winston')
 const { pool } = require('../../config/db')
 
 exports.registerUserValidation = async (req, res, next) => {
+
   try {
     const { user } = req.body
 
@@ -31,10 +34,34 @@ exports.registerUserValidation = async (req, res, next) => {
         // Check if it was an email match
         if(usr.email === user.email) {
           validationErrors.emailInUse = true
+          logger.log(
+            'warn',
+            'Email is already in use',
+            {
+              method: req.method,
+              path: req.path,
+              status: 409,
+              file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+              user_id: null,
+              value: usr.email
+            }
+          )
         }
         // Check if it was a username match
         if(usr.username === user.username) {
           validationErrors.usernameInUse = true
+          logger.log(
+            'warn',
+            'Username is already in use',
+            {
+              method: req.method,
+              path: req.path,
+              status: 409,
+              file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+              user_id: null,
+              value: usr.username
+            }
+          )
         }
       })
     }
@@ -42,19 +69,55 @@ exports.registerUserValidation = async (req, res, next) => {
     // Check if the password is within range
     if(user.password.length < 8) {
       validationErrors.passwordShort = true
+      logger.log(
+        'warn',
+        'Password is too short',
+        {
+          method: req.method,
+          path: req.path,
+          status: 409,
+          file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+          user_id: null,
+          value: "hidden"
+        }
+      )
     } else if(user.password.length > 128) {
       validationErrors.passwordLong = true
+      logger.log(
+        'warn',
+        'Password is too long',
+        {
+          method: req.method,
+          path: req.path,
+          status: 409,
+          file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+          user_id: null,
+          value: "hidden"
+        }
+      )
     }
 
     // Check if the two password match
     if(user.password !== user.confirmPassword) {
       validationErrors.passwordMatch = true
+      logger.log(
+        'warn',
+        'Passwords do not match',
+        {
+          method: req.method,
+          path: req.path,
+          status: 409,
+          file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+          user_id: null,
+          value: "hidden"
+        }
+      )
     }
 
     // Loop through the validation error object and see if any of them is true
     if(Object.values(validationErrors).includes(true)) {
-      return res.status(400).json({
-        status: 400,
+      return res.status(409).json({
+        status: 409,
         message: 'Validation errors',
         validationErrors
       })
@@ -63,9 +126,21 @@ exports.registerUserValidation = async (req, res, next) => {
 
   } catch (error) {
     console.log(error.message)
-    res.status(500).json({
+    logger.log(
+      'error',
+      error.message,
+      {
+        method: req.method,
+        path: req.path,
+        status: 500,
+        file: `${path.join(__dirname,)}/${path.basename(__filename)}`,
+        user_id: 'server error',
+        value: error.value
+      }
+    )
+    return res.status(500).json({
       status: 500,
-      message: 'Server error'
+      message: error.message,
     })
   }
 }
