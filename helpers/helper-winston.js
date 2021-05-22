@@ -22,24 +22,26 @@ class SQLTransport extends Transport {
     setImmediate(async () => {
       this.emit('logged', info);
       const payload = {
-        service: info.service,
         method: info.method,
-        path: info.path,
-        http_status: info.status,
+        url: info.url,
+        status: info.status,
         file: info.file,
         level: info.level,
         message: info.message,
-        user_id: info.user_id,
-        value: info.value,
+        user_id: info.user_id || null,
+        project_id: info.project_id || null,
+        position_id: info.position_id || null,
+        application_id: info.application_id || null,
+        type: info.type || null,
+        value: info.value || null,
         created_at: info.timestamp,
       }
-      console.log(payload)
       await pool.query(
         `
-          insert into logs (user_id, method, path, status, file, level, message)
-          values ($1, $2, $3, $4, $5, $6, $7);
+          insert into logs (user_id, project_id, position_id, application_id, method, url, status, file, level, message, value, type)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
         `,
-        [payload.user_id, payload.method, payload.path, payload.http_status, payload.file, payload.level, payload.message]
+        [payload.user_id, payload.project_id, payload.position_id, payload.application_id, payload.method, payload.url, payload.status, payload.file, payload.level, payload.message, payload.value, payload.type]
       )
 
     });
@@ -50,12 +52,11 @@ class SQLTransport extends Transport {
 }
 
 exports.logger = createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: format.combine(
     format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
     format.prettyPrint()
   ),
-  defaultMeta: { service: 'PZ-back-end' },
+  defaultMeta: { },
   transports: [
     //
     // - Write to all logs with level `info` and below to `quick-start-combined.log`.
