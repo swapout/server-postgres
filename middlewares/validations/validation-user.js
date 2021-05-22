@@ -1,6 +1,16 @@
 const path = require('path')
 const { logger } = require('../../helpers/helper-winston')
 const { pool } = require('../../config/db')
+const {
+  HttpError,
+  HttpBadRequest,
+  HttpUnauthorized,
+  HttpForbidden,
+  HttpNotFound,
+  HttpConflict,
+  HttpInternalServerError,
+  HttpServiceUnavailable
+} = require('../../utils/error/CustomError')
 
 const relativePath = `${path.relative(process.cwd(), path.join(__dirname,))}/${path.basename(__filename)}`
 
@@ -20,6 +30,7 @@ exports.registerUserValidation = async (req, res, next) => {
     }
 
     const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
+    // TODO: Add invalid email handler here
     validationErrors.invalidEmail = !emailRegex.test(user.email)
 
     // Check if email or username already exist in the BD
@@ -35,19 +46,31 @@ exports.registerUserValidation = async (req, res, next) => {
       isExistingUser.rows.map((usr) => {
         // Check if it was an email match
         if(usr.email === user.email) {
-          validationErrors.emailInUse = true
-          logger.log(
-            'warn',
-            'Email is already in use',
-            {
-              url: req.url,
-              method: req.method,
-              status: 409,
-              file: relativePath,
-              value: usr.email,
-              type: 'duplicate error'
-            }
-          )
+          // validationErrors.emailInUse = true
+          // throw new CustomError(
+          //   'Email already exists',
+          //   req,
+          //   res,
+          //   {
+          //     status: 409,
+          //     file: relativePath,
+          //     value: usr.email,
+          //     type: 'Duplicate entry'
+          //   }
+          //   );
+          throw new HttpConflict('Username already exists')
+          // logger.log(
+          //   'warn',
+          //   'Email is already in use',
+          //   {
+          //     url: req.url,
+          //     method: req.method,
+          //     status: 409,
+          //     file: relativePath,
+          //     value: usr.email,
+          //     type: 'duplicate error'
+          //   }
+          // )
         }
         // Check if it was a username match
         if(usr.username === user.username) {
@@ -121,20 +144,20 @@ exports.registerUserValidation = async (req, res, next) => {
 
   } catch (error) {
     console.log(error.message)
-    logger.error(
-      error.message,
-      {
-        url: req.url,
-        method: req.method,
-        status: 500,
-        file: relativePath,
-        type: 'server error',
-        value: error.value
-      }
-    )
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
+    // logger.error(
+    //   error.message,
+    //   {
+    //     url: req.url,
+    //     method: req.method,
+    //     status: 500,
+    //     file: relativePath,
+    //     type: 'server error',
+    //     value: error.value
+    //   }
+    // )
+    return res.status(error.statusCode).json({
+      status: error.statusCode,
+      message: error.message
     })
   }
 }
