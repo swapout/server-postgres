@@ -160,12 +160,19 @@ exports.getPositionsByProject = async (req, res) => {
                  distinct
                     pt.label
                   ) AS technologies,
-                 count(distinct par.id) as applicants
+                 jsonb_strip_nulls(
+                   jsonb_agg(
+                     distinct jsonb_build_object(
+                       'id', par.user_id,
+                       'status', par.status
+                     )
+                   )
+                 ) as applicants
           FROM positions p
           JOIN position_tech AS pt ON pt.position_id = p.id
           JOIN roles AS r ON r.id = p.role
           JOIN levels AS l ON l.id = p.level
-          full join (select * from positions_applications_relations where status = 'pending') par on p.id = par.position_id 
+          full join positions_applications_relations par on p.id = par.position_id 
           WHERE p.project_id = $1 and p.vacancies > 0
           GROUP BY p.title, p.id, r.label, l.label
           ORDER BY title ASC;
@@ -181,6 +188,8 @@ exports.getPositionsByProject = async (req, res) => {
         positions: []
       })
     }
+
+    foundPositions.rows = stripEmptyObjectsFromArray(foundPositions.rows)
 
     return res.status(200).json({
       status: 200,
@@ -510,12 +519,19 @@ const normalizePosition = (positionsArray, isArray = false) => {
       role: position.role,
       level: position.level,
       vacancies: position.vacancies,
-      applicants: position.applicants * 1,
+      applicants: position.applicants,
       projectId: position.project_id,
       userId: position.user_id,
       technologies: position.technologies,
       createdAt: position.created_at,
       updatedAt: position.updated_at
     }
+  })
+}
+
+const stripEmptyObjectsFromArray = (array) => {
+  return array.map((item) => {
+    item.applicants = item.applicants.filter(el => Object.keys(el).length)
+    return item
   })
 }

@@ -615,5 +615,4 @@ const stripEmptyObjectsFromArray = (array) => {
     item.collaborators = item.collaborators.filter(el => Object.keys(el).length)
     return item
   })
-
 }
