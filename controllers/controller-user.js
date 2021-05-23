@@ -8,6 +8,7 @@ const path = require('path')
 const { logger } = require('../helpers/helper-winston')
 const relativePath = `${path.relative(process.cwd(), path.join(__dirname,))}/${path.basename(__filename)}`
 const passwordResetTemplate = require('../templates/template-passwordReset')
+const { errorHandler } = require('../utils/error/errorHelpers')
 const mailgun = require('mailgun-js')({apiKey: config.get('mailgun.apiKey'), domain: config.get('mailgun.domain')})
 const {
   insertUserTech,
@@ -58,6 +59,7 @@ exports.createUser = async (req, res) => {
 
     // Create and save bearer_token to DB
     const bearer_token = await createAndSaveBearerToken(savedUser, req, res, client)
+    //TODO: Continue error handling from here
 
     // Insert technologies and languages to DB and receive the formatted arrays back
     savedUser.technologies = await insertUserTech(user.technologies, savedUser.id, client)
@@ -95,32 +97,9 @@ exports.createUser = async (req, res) => {
     })
 
   } catch (error) {
-    // console.log('Error.code: ', error.code)
-    // console.log('Error.errno: ', error.errno)
-    // console.log('Error.sqlMessage: ', error.sqlMessage)
-    // console.log('Error.sqlState: ', error.sqlState)
-    // console.log('Error.index: ', error.index)
-    // console.log('Error.sql: ', error.sql)
-    // console.log(Object.keys(error))
-
     // Error handling
     await client.query('ROLLBACK')
-    console.log(error.stack)
-    logger.error(
-      error.message,
-      {
-        url: req.url,
-        method: req.method,
-        status: 500,
-        file: relativePath,
-        type: 'server error',
-        value: error.stack
-      }
-    )
-    return res.status(500).json({
-      status: 500,
-      message: 'Server error'
-    })
+    errorHandler(error, req, res)
   } finally {
     client.release()
   }

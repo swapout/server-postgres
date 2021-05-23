@@ -6,7 +6,6 @@ const format = require('pg-format')
 /////////////////
 
 exports.insertUserTech = async (technologiesArray, id, client) => {
-  try {
     // Gets technologies corresponding of the array of user technologies
     const technologies = await client.query(
       `
@@ -33,9 +32,6 @@ exports.insertUserTech = async (technologiesArray, id, client) => {
     )
     await client.query(sqlTech)
     return technologies.rows
-  } catch (error) {
-    console.log('insertUserTech error: ', error.message)
-  }
 }
 
 exports.insertUserLang = async (languagesArray, id, client) => {

@@ -17,7 +17,7 @@ function errorHandler(error, req, res) {
   // console.log(Object.keys(error))
   console.log(error)
   if (error instanceof HttpError) {
-    res.status(error.statusCode).json({
+    return res.status(error.statusCode).json({
         status: error.statusCode,
         message: error.message,
       }
@@ -25,7 +25,6 @@ function errorHandler(error, req, res) {
   } else {
     if(error.code) {
       if(postgresErrorCodes.includes(error.code.substring(0, 2))){
-        console.log('sql error')
         logger.log('error', error.message, {
           url: req.url,
           type: errorTypes.POSTGRES_ERROR,
@@ -33,9 +32,18 @@ function errorHandler(error, req, res) {
           status: httpStatusCodes.INTERNAL_SERVER_ERROR,
           stack: error.stack,
         })
+      } else {
+        logger.log('error', error.message, {
+        url: req.url,
+        type: errorTypes.SERVER_ERROR,
+        method: req.method,
+        status: httpStatusCodes.INTERNAL_SERVER_ERROR,
+        stack: error.stack,
+        })
       }
     }
-    res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
+
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       status: httpStatusCodes.INTERNAL_SERVER_ERROR,
       message: 'Server error',
     })

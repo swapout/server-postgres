@@ -2,16 +2,9 @@ const path = require('path')
 const { errorHandler } = require('../../utils/error/errorHelpers')
 const { logger } = require('../../helpers/helper-winston')
 const { pool } = require('../../config/db')
-const {
-  HttpError,
-  HttpBadRequest,
-  HttpUnauthorized,
-  HttpForbidden,
-  HttpNotFound,
-  HttpConflict,
-  HttpInternalServerError,
-  HttpServiceUnavailable
-} = require('../../utils/error/CustomError')
+const { HttpBadRequest, HttpConflict, } = require('../../utils/error/CustomError')
+const { errorHandler } = require('../../utils/error/errorHelpers')
+const { errorTypes } = require('../../utils/error/constants')
 
 const {
   httpStatusCodes,
@@ -23,7 +16,6 @@ exports.registerUserValidation = async (req, res, next) => {
 
   try {
     const { user } = req.body
-
     const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
 
     if(!emailRegex.test(user.email)) {
@@ -108,7 +100,6 @@ exports.registerUserValidation = async (req, res, next) => {
         }
       )
     }
-
     next()
 
   } catch (error) {
