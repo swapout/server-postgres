@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken')
 const config = require('config')
 
-exports.createAndSaveBearerToken = async(user, res, pool) => {
+exports.createAndSaveBearerToken = async(user, req, res, pool) => {
   try {
     // Create and sign the bearer token
     const token = jwt.sign(
@@ -14,7 +14,7 @@ exports.createAndSaveBearerToken = async(user, res, pool) => {
       `
         INSERT INTO bearer_tokens (bearer_token, user_id)
         VALUES ($1, $2)
-        RETURNING bearer_token
+        RETURNING bearer_token;
         `,
       [token, user.id]
     )
@@ -28,6 +28,7 @@ exports.createAndSaveBearerToken = async(user, res, pool) => {
     }
     return bearer_token.rows[0].bearer_token
   } catch (error) {
+    console.log(error)
     console.log('createAndSaveBearerToken error: ', error.message)
   }
 }

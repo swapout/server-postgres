@@ -1,5 +1,5 @@
 const { logger } = require('../../helpers/helper-winston')
-const responseCodes = require('../../utils/error/httpErrorCodes')
+const { httpStatusCodes } = require('./constants')
 
 class HttpError extends Error {
   constructor({ message, name, statusCode, data }) {
@@ -8,6 +8,22 @@ class HttpError extends Error {
     this.statusCode = statusCode;
     this.data = data;
     Error.captureStackTrace(this, HttpError);
+
+    logger.log(
+      this.data.level,
+      this.message,
+      {
+        url: this.data.url,
+        type: this.data.type,
+        method: this.data.method,
+        status: this.statusCode,
+        stack: this.stack,
+        user_id: this.data.userId,
+        project_id: this.data.projectId,
+        position_id: this.data.positionId,
+        application_id: this.data.applicationId,
+      }
+    )
   }
 }
 
@@ -16,7 +32,7 @@ class HttpBadRequest extends HttpError {
     super({
       message,
       name: "HttpBadRequest",
-      statusCode: responseCodes.BAD_REQUEST,
+      statusCode: httpStatusCodes.BAD_REQUEST,
       data
     });
   }
@@ -27,7 +43,7 @@ class HttpUnauthorized extends HttpError {
     super({
       message,
       name: "HttpUnauthorized",
-      statusCode: responseCodes.UNAUTHORIZED,
+      statusCode: httpStatusCodes.UNAUTHORIZED,
       data
     });
   }
@@ -38,7 +54,7 @@ class HttpForbidden extends HttpError {
     super({
       message,
       name: "HttpForbidden",
-      statusCode: responseCodes.FORBIDDEN,
+      statusCode: httpStatusCodes.FORBIDDEN,
       data
     });
   }
@@ -49,7 +65,7 @@ class HttpNotFound extends HttpError {
     super({
       message,
       name: "HttpNotFound",
-      statusCode: responseCodes.NOT_FOUND,
+      statusCode: httpStatusCodes.NOT_FOUND,
       data
     });
   }
@@ -60,7 +76,7 @@ class HttpConflict extends HttpError {
     super({
       message,
       name: "HttpConflict",
-      statusCode: responseCodes.CONFLICT  ,
+      statusCode: httpStatusCodes.CONFLICT,
       data
     });
   }
@@ -71,7 +87,7 @@ class HttpInternalServerError extends HttpError {
     super({
       message,
       name: "HttpInternalServerError",
-      statusCode: responseCodes.INTERNAL_SERVER_ERROR,
+      statusCode: httpStatusCodes.INTERNAL_SERVER_ERROR,
       data
     });
   }
@@ -82,7 +98,7 @@ class HttpServiceUnavailable extends HttpError {
     super({
       message,
       name: "HttpServiceUnavailable",
-      statusCode: responseCodes.SERVICE_UNAVAILABLE,
+      statusCode: httpStatusCodes.SERVICE_UNAVAILABLE,
       data
     });
   }

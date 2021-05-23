@@ -1,4 +1,5 @@
 const path = require('path')
+const { errorHandler } = require('../../utils/error/errorHelpers')
 const { logger } = require('../../helpers/helper-winston')
 const { pool } = require('../../config/db')
 const {
@@ -12,26 +13,30 @@ const {
   HttpServiceUnavailable
 } = require('../../utils/error/CustomError')
 
-const relativePath = `${path.relative(process.cwd(), path.join(__dirname,))}/${path.basename(__filename)}`
+const {
+  httpStatusCodes,
+  postgresErrorCodes,
+  errorTypes
+} = require('../../utils/error/constants')
 
 exports.registerUserValidation = async (req, res, next) => {
 
   try {
     const { user } = req.body
 
-    // Create validation error object to track errors
-    const validationErrors = {
-      invalidEmail: false,
-      emailInUse: false,
-      usernameInUse: false,
-      passwordShort: false,
-      passwordLong: false,
-      passwordMatch: false,
-    }
-
     const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
-    // TODO: Add invalid email handler here
-    validationErrors.invalidEmail = !emailRegex.test(user.email)
+
+    if(!emailRegex.test(user.email)) {
+      throw new HttpBadRequest(
+        'Invalid email address format',
+        {
+          level: 'warn',
+          type: errorTypes.VALIDATION_ERROR,
+          url: req.url,
+          method: req.method,
+          value: user.email,
+        })
+    }
 
     // Check if email or username already exist in the BD
     const isExistingUser = await pool.query(
@@ -46,118 +51,67 @@ exports.registerUserValidation = async (req, res, next) => {
       isExistingUser.rows.map((usr) => {
         // Check if it was an email match
         if(usr.email === user.email) {
-          // validationErrors.emailInUse = true
-          // throw new CustomError(
-          //   'Email already exists',
-          //   req,
-          //   res,
-          //   {
-          //     status: 409,
-          //     file: relativePath,
-          //     value: usr.email,
-          //     type: 'Duplicate entry'
-          //   }
-          //   );
-          throw new HttpConflict('Username already exists')
-          // logger.log(
-          //   'warn',
-          //   'Email is already in use',
-          //   {
-          //     url: req.url,
-          //     method: req.method,
-          //     status: 409,
-          //     file: relativePath,
-          //     value: usr.email,
-          //     type: 'duplicate error'
-          //   }
-          // )
+          throw new HttpConflict(
+            'Email is already in use',
+            {
+              level: 'warn',
+              type: errorTypes.VALIDATION_ERROR,
+              url: req.url,
+              method: req.method,
+            })
         }
         // Check if it was a username match
         if(usr.username === user.username) {
-          validationErrors.usernameInUse = true
-          logger.warn(
+          throw new HttpConflict(
             'Username is already in use',
             {
+              level: 'warn',
+              type: errorTypes.VALIDATION_ERROR,
               url: req.url,
               method: req.method,
-              status: 409,
-              file: relativePath,
-              value: usr.username,
-              type: 'duplicate error'
-            }
-          )
+            })
         }
       })
     }
 
     // Check if the password is within range
     if(user.password.length < 8) {
-      validationErrors.passwordShort = true
-      logger.warn(
+      throw new HttpBadRequest(
         'Password is too short',
         {
+          level: 'warn',
+          type: errorTypes.VALIDATION_ERROR,
           url: req.url,
           method: req.method,
-          status: 409,
-          file: relativePath,
-          type: 'validation error'
-        }
-      )
+        })
     } else if(user.password.length > 128) {
-      validationErrors.passwordLong = true
-      logger.warn(
+      throw new HttpBadRequest(
         'Password is too long',
         {
+          level: 'warn',
+          type: errorTypes.VALIDATION_ERROR,
           url: req.url,
           method: req.method,
-          status: 409,
-          file: relativePath,
-          type: 'validation error'
         }
       )
     }
 
     // Check if the two password match
     if(user.password !== user.confirmPassword) {
-      validationErrors.passwordMatch = true
-      logger.warn(
-        'Passwords do not match',
+      throw new HttpBadRequest(
+        'Passwords don\'t match',
         {
+          level: 'warn',
+          type: errorTypes.VALIDATION_ERROR,
           url: req.url,
           method: req.method,
-          status: 409,
-          file: relativePath,
-          type: 'validation error'
         }
       )
     }
 
-    // Loop through the validation error object and see if any of them is true
-    if(Object.values(validationErrors).includes(true)) {
-      return res.status(409).json({
-        status: 409,
-        message: 'Validation errors',
-        validationErrors
-      })
-    }
     next()
 
   } catch (error) {
-    console.log(error.message)
-    // logger.error(
-    //   error.message,
-    //   {
-    //     url: req.url,
-    //     method: req.method,
-    //     status: 500,
-    //     file: relativePath,
-    //     type: 'server error',
-    //     value: error.value
-    //   }
-    // )
-    return res.status(error.statusCode).json({
-      status: error.statusCode,
-      message: error.message
-    })
+    errorHandler(error, req, res)
   }
 }

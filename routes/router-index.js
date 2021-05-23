@@ -11,12 +11,7 @@ const projectRoutes = require('../routes/router-project')
 const positionRoutes = require('../routes/router-position')
 const applicationRoutes = require('../routes/router-application')
 const fakeRoutes = require('../routes/router-fake')
-const {
-  attachResponder,
-  errorHandler
-} = require('../middlewares/middleware-error')
 
-router.use(attachResponder)
 router.use('/user', userRoutes)
 router.use('/project', projectRoutes)
 router.use('/position', positionRoutes)
@@ -33,13 +28,11 @@ if(process.env.NODE_ENV === 'dev') {
   router.use('/admin', adminRoutes)
 }
 
-router.use(errorHandler)
-
-// router.all('*', (req, res) => {
-//   res.status(404).json({
-//     status: 404,
-//     message: "page doesn't exist"
-//   })
-// })
+router.all('*', (req, res) => {
+  res.status(404).json({
+    status: 404,
+    message: "page doesn't exist"
+  })
+})
 
 module.exports = router

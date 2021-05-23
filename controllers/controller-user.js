@@ -4,6 +4,9 @@ const gravatar = require('gravatar')
 const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const moment = require('moment')
+const path = require('path')
+const { logger } = require('../helpers/helper-winston')
+const relativePath = `${path.relative(process.cwd(), path.join(__dirname,))}/${path.basename(__filename)}`
 const passwordResetTemplate = require('../templates/template-passwordReset')
 const mailgun = require('mailgun-js')({apiKey: config.get('mailgun.apiKey'), domain: config.get('mailgun.domain')})
 const {
@@ -54,11 +57,21 @@ exports.createUser = async (req, res) => {
     const savedUser = response.rows[0]
 
     // Create and save bearer_token to DB
-    const bearer_token = await createAndSaveBearerToken(savedUser, res, client)
+    const bearer_token = await createAndSaveBearerToken(savedUser, req, res, client)
 
     // Insert technologies and languages to DB and receive the formatted arrays back
     savedUser.technologies = await insertUserTech(user.technologies, savedUser.id, client)
     if(!savedUser.technologies) {
+      logger.warn(
+        'Something went wrong with technology creation',
+        {
+          url: req.url,
+          method: req.method,
+          status: 404,
+          file: relativePath,
+          type: 'DB error'
+        }
+      )
       return res.status(404).json({
         status: 404,
         message: 'There was a problem processing technologies'
@@ -92,7 +105,18 @@ exports.createUser = async (req, res) => {
 
     // Error handling
     await client.query('ROLLBACK')
-    console.log(error.message)
+    console.log(error.stack)
+    logger.error(
+      error.message,
+      {
+        url: req.url,
+        method: req.method,
+        status: 500,
+        file: relativePath,
+        type: 'server error',
+        value: error.stack
+      }
+    )
     return res.status(500).json({
       status: 500,
       message: 'Server error'
@@ -149,7 +173,7 @@ exports.loginUser = async (req, res) => {
     foundUser.technologies = await fetchUserTech(foundUser.id)
 
     // Create and save bearer token to the DB
-    const bearer_token = await createAndSaveBearerToken(foundUser, res, pool)
+    const bearer_token = await createAndSaveBearerToken(foundUser, req, res, pool)
 
     // Success response including the user and token
     return res.status(200).json({
@@ -500,7 +524,7 @@ exports.updateUsername = async (req, res) => {
     )
 
     // Create new bearer token
-    const token = await createAndSaveBearerToken(updatedUser.rows[0], res, pool)
+    const token = await createAndSaveBearerToken(updatedUser.rows[0], req, res, pool)
 
     // If token couldn't be created
     if(!token) {
@@ -618,7 +642,7 @@ exports.updateEmail = async (req, res) => {
     )
 
     // Generate a new token
-    const token = await createAndSaveBearerToken(updatedUser.rows[0], res, pool)
+    const token = await createAndSaveBearerToken(updatedUser.rows[0], req, res, pool)
 
     // If something went wrong during token creation
     if(!token) {
