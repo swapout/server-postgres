@@ -25,6 +25,7 @@ exports.createProject = async (req, res) => {
 
     // Add technologies to project
     savedProject.rows[0].technologies = await insertProjectTech(project.technologies, savedProject.rows[0].id, client)
+    savedProject.rows[0].collaborators = []
     if(!savedProject.rows[0].technologies) {
       return res.status(404).json({
         status: 404,
