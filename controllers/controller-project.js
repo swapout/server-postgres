@@ -411,7 +411,7 @@ exports.deleteProjectById = async (req, res) => {
       `
         DELETE FROM projects
         WHERE id = $1 AND owner = $2
-        RETURNING *;
+        RETURNING id;
       `,
       [projectId, userId]
     )
@@ -427,6 +427,9 @@ exports.deleteProjectById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully deleted project',
+      project: {
+        id: deletedProject.rows[0].id
+      }
     })
   } catch (error) {
     // Error handling
