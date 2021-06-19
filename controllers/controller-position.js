@@ -50,6 +50,30 @@ exports.createPosition = async (req, res) => {
       ]
     )
 
+    // Get role label
+    const role = await client.query(
+      `
+        select label
+        from roles
+        where id = $1;
+      `,
+      [savedPosition.rows[0].role]
+    )
+
+    // Get level label
+    const level = await client.query(
+      `
+        select label
+        from levels
+        where id = $1;
+      `,
+      [savedPosition.rows[0].level]
+    )
+
+    // Assign role and level label to the position
+    savedPosition.rows[0].role = role.rows[0].label
+    savedPosition.rows[0].level = level.rows[0].label
+
     // Change project has positions to true
     await client.query(
       `
