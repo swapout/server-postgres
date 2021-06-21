@@ -196,8 +196,10 @@ exports.getPositionsByProject = async (req, res) => {
                  p.created_at,
                  p.updated_at,
                  jsonb_agg(
-                 distinct
-                    pt.label
+                    distinct jsonb_build_object(
+                      'label', pt.label,
+                      'id', pt.technology_id
+                    )
                   ) AS technologies,
                  jsonb_strip_nulls(
                    jsonb_agg(
