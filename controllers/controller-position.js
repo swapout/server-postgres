@@ -86,9 +86,24 @@ exports.createPosition = async (req, res) => {
     )
 
     // Add technologies to position
-    savedPosition.rows[0].technologies = await insertPositionTech(position.technologies, savedPosition.rows[0].id, client)
+    await insertPositionTech(position.technologies, savedPosition.rows[0].id, client)
+    const positionTech = await client.query(
+      `
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'label', pt.label,
+                'id', pt.technology_id
+            )
+        ) as technologies
+        FROM position_tech AS pt
+        WHERE position_id = $1;
+      `,
+      [savedPosition.rows[0].id]
+    )
 
-    await client.query('COMMIT')
+    savedPosition.rows[0].technologies = positionTech.rows[0].technologies
+
+      await client.query('COMMIT')
     return res.status(201).json({
       status: 201,
       message: 'position added successfully',
