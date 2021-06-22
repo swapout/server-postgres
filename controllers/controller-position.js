@@ -53,17 +53,25 @@ exports.createPosition = async (req, res) => {
     // Get role label
     const role = await client.query(
       `
-        select label
+        select jsonb_build_object(
+          'id', id,
+          'label', label
+        ) as role
         from roles
         where id = $1;
       `,
       [savedPosition.rows[0].role]
     )
 
+    console.log(role.rows[0].role)
+
     // Get level label
     const level = await client.query(
       `
-        select label
+        select jsonb_build_object(
+          'id', id,
+          'label', label
+        ) as level
         from levels
         where id = $1;
       `,
@@ -71,8 +79,8 @@ exports.createPosition = async (req, res) => {
     )
 
     // Assign role and level label to the position
-    savedPosition.rows[0].role = role.rows[0].label
-    savedPosition.rows[0].level = level.rows[0].label
+    savedPosition.rows[0].role = role.rows[0].role
+    savedPosition.rows[0].level = level.rows[0].level
 
     // Change project has positions to true
     await client.query(
