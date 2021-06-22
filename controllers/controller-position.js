@@ -501,6 +501,34 @@ exports.updatePositionById = async (req, res) => {
       [position.title, position.description, position.vacancies, position.updatedAt, positionId, userId, position.level, position.role]
     )
 
+    const role = await client.query(
+      `
+        select 
+          jsonb_build_object(
+            'label', r.label,
+            'id', r.id
+          ) AS role
+          from roles r
+          where id = $1;
+      `,
+      [updatedPosition.rows[0].role]
+    )
+    const level = await client.query(
+      `
+        select 
+          jsonb_build_object(
+            'label', l.label,
+            'id', l.id
+          ) AS level
+          from levels l
+          where id = $1;
+      `,
+      [updatedPosition.rows[0].level]
+    )
+
+    updatedPosition.rows[0].role = role.rows[0].role
+    updatedPosition.rows[0].level = level.rows[0].level
+
     // Delete old technologies relations
     await deletePositionTech(updatedPosition.rows[0].id, client)
     // Add new technologies to relations
