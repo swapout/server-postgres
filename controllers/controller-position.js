@@ -141,8 +141,14 @@ exports.getPositionById = async (req, res) => {
           p.id,
           p.title, 
           p.description,
-          l.label as level,
-          r.label as role,
+          jsonb_build_object(
+            'label', l.label,
+            'id', l.id
+          ) AS level,
+          jsonb_build_object(
+            'label', r.label,
+            'id', r.id
+          ) AS role,
           p.vacancies,
           p.project_id,
           p.user_id,
@@ -159,7 +165,7 @@ exports.getPositionById = async (req, res) => {
         JOIN roles AS r ON r.id = p.role
         JOIN levels AS l ON l.id = p.level
         WHERE p.id = $1 and p.vacancies > 0
-        GROUP BY p.title, p.id,  r.label, l.label;
+        GROUP BY p.title, p.id, r.label, l.label, l.id, r.id;
       `,
       [positionId]
     )
