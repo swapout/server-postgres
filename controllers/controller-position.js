@@ -202,8 +202,14 @@ exports.getPositionsByProject = async (req, res) => {
           SELECT p.id,
                  p.title,
                  p.description,
-                 l.label as level,
-                 r.label as role,
+                 jsonb_build_object(
+                   'label', l.label,
+                   'id', l.id
+                 ) AS level,
+                 jsonb_build_object(
+                   'label', r.label,
+                   'id', r.id
+                 ) AS role,
                  p.vacancies,
                  p.project_id,
                  p.user_id,
@@ -229,7 +235,7 @@ exports.getPositionsByProject = async (req, res) => {
           JOIN levels AS l ON l.id = p.level
           full join positions_applications_relations par on p.id = par.position_id 
           WHERE p.project_id = $1 and p.vacancies > 0
-          GROUP BY p.title, p.id, r.label, l.label
+          GROUP BY p.title, p.id, r.label, l.label, l.id, r.id
           ORDER BY title ASC;
       `,
       [projectId]
