@@ -359,7 +359,26 @@ exports.getAllPositions = async (req, res) => {
     // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
     sql = format(
       `
-        SELECT p.id, p.user_id, p.title, p.description, l.label as level, r.label as role, p.vacancies, p.project_id, jsonb_agg(pt2.label) AS technologies, p.created_at, p.updated_at 
+        SELECT 
+            p.id, 
+            p.user_id, 
+            p.title, 
+            p.description, 
+            jsonb_build_object(
+                'label', l.label,
+                'id', l.id
+            ) AS level,
+            jsonb_build_object(
+                'label', r.label,
+                'id', r.id
+            ) AS role,
+            p.vacancies, 
+            p.project_id, 
+            jsonb_agg(
+                pt2.label
+            ) AS technologies, 
+            p.created_at, 
+            p.updated_at 
         FROM position_tech pt2
         JOIN(
             SELECT * 
@@ -375,7 +394,7 @@ exports.getAllPositions = async (req, res) => {
         JOIN roles AS r ON r.id = p.role
         JOIN levels AS l ON l.id = p.level
         WHERE pt2.position_id = ta.position_id
-        GROUP BY p.id, p.user_id, p.title, p.description, l.label, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
+        GROUP BY p.id, p.user_id, p.title, p.description, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
         order by %5$s %6$s
         offset %7$L
         limit %8$L;
