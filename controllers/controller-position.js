@@ -585,6 +585,9 @@ exports.deletePositionById = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'Successfully deleted position',
+      position: {
+        id: deletedPosition.rows[0].id
+      }
     })
   } catch (error) {
     console.log(error)
