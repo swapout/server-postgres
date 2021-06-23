@@ -543,7 +543,7 @@ exports.quitCollaborator = async (req, res) => {
 /////////////
 // Make responses consistent across all responses
 // and allow switching from a single object to an array of objects
-const normalizeProject = (projectsArray, isArray = false) => {
+exports.normalizeProject = (projectsArray, isArray = false) => {
   if(projectsArray.length === 1 && !isArray) {
     const project = projectsArray[0]
     return {
