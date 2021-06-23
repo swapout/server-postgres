@@ -2,6 +2,7 @@ const { pool } = require('../config/db')
 const moment = require('moment')
 const format = require('pg-format')
 
+const {normalizePosition} = require('../helpers/normalize')
 const { insertPositionTech, fetchPositionTech, deletePositionTech } = require('../helpers/helper-queries')
 
 exports.createPosition = async (req, res) => {
@@ -596,48 +597,6 @@ exports.deletePositionById = async (req, res) => {
       message: error.message
     })
   }
-}
-
-/////////////
-// HELPERS //
-/////////////
-// Make responses consistent across all responses
-// and allow switching from a single object to an array of objects
-const normalizePosition = (positionsArray, isArray = false) => {
-  if(positionsArray.length === 1 && !isArray) {
-    const position = positionsArray[0]
-    return {
-      id: position.id,
-      title: position.title,
-      description: position.description,
-      role: position.role,
-      level: position.level,
-      vacancies: position.vacancies,
-      applicants: position.applicants,
-      projectId: position.project_id,
-      userId: position.user_id,
-      technologies: position.technologies,
-      createdAt: position.created_at,
-      updatedAt: position.updated_at
-    }
-  }
-
-  return positionsArray.map((position) => {
-    return {
-      id: position.id,
-      title: position.title,
-      description: position.description,
-      role: position.role,
-      level: position.level,
-      vacancies: position.vacancies,
-      applicants: position.applicants,
-      projectId: position.project_id,
-      userId: position.user_id,
-      technologies: position.technologies,
-      createdAt: position.created_at,
-      updatedAt: position.updated_at
-    }
-  })
 }
 
 const stripEmptyObjectsFromArray = (array) => {

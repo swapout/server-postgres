@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs')
 const moment = require('moment')
 const passwordResetTemplate = require('../templates/template-passwordReset')
 const mailgun = require('mailgun-js')({apiKey: config.get('mailgun.apiKey'), domain: config.get('mailgun.domain')})
+const {normalizeUser} = require('../helpers/normalize')
 const {
   insertUserTech,
   insertUserLang,
@@ -904,22 +905,4 @@ const verifyAndCreateSocial = (user) => {
     user.linkedinURL = `https://www.linkedin.com/in/${user.linkedinURL}/`
   }
   return user
-}
-
-// Makes user response constant over all routes and camel casing response from postgres
-const normalizeUser = (user) => {
-  return {
-    id: user.id,
-    avatar: user.avatar,
-    username: user.username,
-    githubURL: user.githuburl,
-    gitlabURL: user.gitlaburl,
-    bitbucketURL: user.bitbucketurl,
-    linkedinURL: user.linkedinurl,
-    bio: user.bio,
-    createdAt: user.created_at,
-    updatedAt: user.updated_at,
-    languages: user.languages,
-    technologies: user.technologies
-  }
 }
