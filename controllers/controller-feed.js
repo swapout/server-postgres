@@ -26,8 +26,7 @@ exports.getUserFeed = async (req, res) => {
       [userId]
     )
 
-    console.log(userTech.rows[0].id)
-
+    // Get the most recent positions based on the user's technology stack
     const matchedPositions = await pool.query(
       `
         SELECT 

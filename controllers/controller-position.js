@@ -560,6 +560,9 @@ exports.updatePositionById = async (req, res) => {
 }
 
 exports.deletePositionById = async (req, res) => {
+  // Create DB connection pool and start transaction
+  const client = await pool.connect()
+  await client.query('BEGIN')
   // Get position ID from the query string
   const positionId = req.params.id
   // Get the user ID from the token
@@ -577,12 +580,37 @@ exports.deletePositionById = async (req, res) => {
 
     // If no positions got deleted
     if(deletedPosition.rows.length === 0) {
+      console.log('No position found with this ID')
       return res.status(400).json({
         status: 400,
         message: 'Something went wrong',
       })
     }
 
+    const positionsLeft = await pool.query(
+      `
+      select *
+      from positions
+      where project_id = $1;
+      `,
+      [deletedPosition.rows[0].project_id]
+    )
+
+    if(positionsLeft.rows.length <= 1) {
+      console.log('project has no positions')
+      await pool.query(
+        `
+        update projects
+        set haspositions = false
+        where id = $1;
+        `,
+        [deletedPosition.rows[0].project_id]
+      )
+    }
+
+    console.log('project has positions')
+
+    await client.query('COMMIT')
     return res.status(200).json({
       status: 200,
       message: 'Successfully deleted position',
@@ -591,11 +619,14 @@ exports.deletePositionById = async (req, res) => {
       }
     })
   } catch (error) {
+    await client.query('ROLLBACK')
     console.log(error)
     return res.status(500).json({
       status: 500,
       message: error.message
     })
+  } finally {
+    client.release()
   }
 }
 
