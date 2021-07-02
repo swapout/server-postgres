@@ -1,10 +1,15 @@
-const { pool } = require('../config/db')
-const { normalizeProject, normalizePosition } = require('../helpers/normalize')
+const { pool } = require("../config/db");
+const format = require("pg-format");
+const {
+  normalizeProject,
+  normalizePosition,
+  normalizeApplicantsFeed,
+} = require("../helpers/normalize");
 
 exports.getUserFeed = async (req, res) => {
   try {
     // Get user ID from the token
-    const userId = req.body.decoded.id
+    const userId = req.body.decoded.id;
 
     // Get the last 10 projects created on the site
     const latestProjects = await pool.query(
@@ -14,7 +19,7 @@ exports.getUserFeed = async (req, res) => {
         order by created_at DESC
         limit 10;
       `
-    )
+    );
 
     // Get user's technologies to filter the positions for the technologies that the user has
     const userTech = await pool.query(
@@ -24,7 +29,7 @@ exports.getUserFeed = async (req, res) => {
         where user_id = $1;
       `,
       [userId]
-    )
+    );
 
     // Get the most recent positions based on the user's technology stack
     const matchedPositions = await pool.query(
@@ -68,19 +73,59 @@ exports.getUserFeed = async (req, res) => {
         LIMIT 10;
         `,
       [userId, userTech.rows[0].id]
-    )
+    );
+
+    const projectsOfUser = await pool.query(
+      `
+        select jsonb_agg(pr.id) as project_ids 
+        from projects pr
+        where owner = $1 and haspositions = true;
+      `,
+      [userId]
+    );
+
+    console.log(projectsOfUser.rows[0].project_ids);
+
+    const positionSQL = format(
+      `
+        select array_agg(pos.id) as position_ids
+        from positions pos
+        where project_id in (%1$L);
+      `,
+      projectsOfUser.rows[0].project_ids
+    );
+
+    const positionsOfUser = await pool.query(positionSQL);
+
+    console.log(positionsOfUser.rows[0].position_ids);
+
+    const applicationsSQL = format(
+      `
+        select par.user_id, u.avatar, u.username, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl, u.bio, par.position_id, p.title, p.description
+        from positions_applications_relations par 
+        join users u on par.user_id = u.id
+        join positions p on par.position_id = p.id
+        where position_id in (%1$L) and "status" = 'pending';
+      `,
+      positionsOfUser.rows[0].position_ids
+    );
+
+    const pendingApplications = await pool.query(applicationsSQL);
+
+    console.log(pendingApplications.rows);
 
     return res.status(200).json({
       status: 200,
-      message: 'Successfully received feed',
+      message: "Successfully received feed",
       projects: normalizeProject(latestProjects.rows, true),
-      position: normalizePosition(matchedPositions.rows, true)
-    })
+      position: normalizePosition(matchedPositions.rows, true),
+      applications: normalizeApplicantsFeed(pendingApplications.rows, true),
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};

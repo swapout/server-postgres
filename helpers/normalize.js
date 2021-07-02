@@ -17,13 +17,13 @@ exports.normalizeUser = (user) => {
     createdAt: user.created_at,
     updatedAt: user.updated_at,
     languages: user.languages,
-    technologies: user.technologies
-  }
-}
+    technologies: user.technologies,
+  };
+};
 
 exports.normalizeProject = (projectsArray, isArray = false) => {
-  if(projectsArray.length === 1 && !isArray) {
-    const project = projectsArray[0]
+  if (projectsArray.length === 1 && !isArray) {
+    const project = projectsArray[0];
     return {
       id: project.id,
       name: project.name,
@@ -34,8 +34,8 @@ exports.normalizeProject = (projectsArray, isArray = false) => {
       technologies: project.technologies,
       collaborators: project.collaborators,
       createdAt: project.created_at,
-      updatedAt: project.updated_at
-    }
+      updatedAt: project.updated_at,
+    };
   }
 
   return projectsArray.map((project) => {
@@ -49,14 +49,14 @@ exports.normalizeProject = (projectsArray, isArray = false) => {
       technologies: project.technologies,
       collaborators: project.collaborators,
       createdAt: project.created_at,
-      updatedAt: project.updated_at
-    }
-  })
-}
+      updatedAt: project.updated_at,
+    };
+  });
+};
 
 exports.normalizePosition = (positionsArray, isArray = false) => {
-  if(positionsArray.length === 1 && !isArray) {
-    const position = positionsArray[0]
+  if (positionsArray.length === 1 && !isArray) {
+    const position = positionsArray[0];
     return {
       id: position.id,
       title: position.title,
@@ -69,8 +69,8 @@ exports.normalizePosition = (positionsArray, isArray = false) => {
       userId: position.user_id,
       technologies: position.technologies,
       createdAt: position.created_at,
-      updatedAt: position.updated_at
-    }
+      updatedAt: position.updated_at,
+    };
   }
 
   return positionsArray.map((position) => {
@@ -86,14 +86,14 @@ exports.normalizePosition = (positionsArray, isArray = false) => {
       userId: position.user_id,
       technologies: position.technologies,
       createdAt: position.created_at,
-      updatedAt: position.updated_at
-    }
-  })
-}
+      updatedAt: position.updated_at,
+    };
+  });
+};
 
 exports.normalizeCollaborators = (collaborators, isArray = false) => {
   if (collaborators.length === 1 && !isArray) {
-    const collaborator = collaborators[0]
+    const collaborator = collaborators[0];
     return {
       id: collaborator.id,
       avatar: collaborator.avatar,
@@ -107,8 +107,8 @@ exports.normalizeCollaborators = (collaborators, isArray = false) => {
       createdAt: collaborator.created_at,
       updatedAt: collaborator.updated_at,
       languages: collaborator.languages,
-      technologies: collaborator.technologies
-    }
+      technologies: collaborator.technologies,
+    };
   }
   return collaborators.map((collaborator) => {
     return {
@@ -124,7 +124,49 @@ exports.normalizeCollaborators = (collaborators, isArray = false) => {
       createdAt: collaborator.created_at,
       updatedAt: collaborator.updated_at,
       languages: collaborator.languages,
-      technologies: collaborator.technologies
-    }
-  })
-}
+      technologies: collaborator.technologies,
+    };
+  });
+};
+
+exports.normalizeApplicantsFeed = (applicantsFeed, isArray = false) => {
+  if (applicantsFeed.length === 1 && !isArray) {
+    const applicant = applicantsFeed[0];
+    return {
+      user: {
+        id: applicant.user_id,
+        avatar: applicant.avatar,
+        username: applicant.username,
+        githubURL: applicant.githuburl,
+        gitlabURL: applicant.gitlaburl,
+        bitbucketURL: applicant.bitbucketurl,
+        linkedinURL: applicant.linkedinurl,
+        bio: applicant.bio,
+      },
+      position: {
+        id: applicant.position_id,
+        title: applicant.title,
+        description: applicant.description,
+      },
+    };
+  }
+  return applicantsFeed.map((applicant) => {
+    return {
+      user: {
+        id: applicant.user_id,
+        avatar: applicant.avatar,
+        username: applicant.username,
+        githubURL: applicant.githuburl,
+        gitlabURL: applicant.gitlaburl,
+        bitbucketURL: applicant.bitbucketurl,
+        linkedinURL: applicant.linkedinurl,
+        bio: applicant.bio,
+      },
+      position: {
+        id: applicant.position_id,
+        title: applicant.title,
+        description: applicant.description,
+      },
+    };
+  });
+};
