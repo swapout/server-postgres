@@ -11,6 +11,7 @@ exports.getUserFeed = async (req, res) => {
     // Get user ID from the token
     const userId = req.body.decoded.id;
 
+    ///////// FEED 1 ///////////
     // Get the last 10 projects created on the site
     const latestProjects = await pool.query(
       `
@@ -21,6 +22,7 @@ exports.getUserFeed = async (req, res) => {
       `
     );
 
+    ///////// FEED 2 ///////////
     // Get user's technologies to filter the positions for the technologies that the user has
     const userTech = await pool.query(
       `
@@ -75,6 +77,8 @@ exports.getUserFeed = async (req, res) => {
       [userId, userTech.rows[0].id]
     );
 
+    ///////// FEED 3 ///////////
+    // Get all project IDs of the user that has positions
     const projectsOfUser = await pool.query(
       `
         select jsonb_agg(pr.id) as project_ids 
@@ -84,8 +88,7 @@ exports.getUserFeed = async (req, res) => {
       [userId]
     );
 
-    console.log(projectsOfUser.rows[0].project_ids);
-
+    // Get all position IDs of the user's projects with positions
     const positionSQL = format(
       `
         select array_agg(pos.id) as position_ids
@@ -94,11 +97,10 @@ exports.getUserFeed = async (req, res) => {
       `,
       projectsOfUser.rows[0].project_ids
     );
-
+    // Call query
     const positionsOfUser = await pool.query(positionSQL);
 
-    console.log(positionsOfUser.rows[0].position_ids);
-
+    // Get all applications, positions, users based on the last query IDs
     const applicationsSQL = format(
       `
         select par.user_id, u.avatar, u.username, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl, u.bio, par.position_id, p.title, p.description
@@ -110,9 +112,8 @@ exports.getUserFeed = async (req, res) => {
       positionsOfUser.rows[0].position_ids
     );
 
+    // Call the query
     const pendingApplications = await pool.query(applicationsSQL);
-
-    console.log(pendingApplications.rows);
 
     return res.status(200).json({
       status: 200,
