@@ -215,6 +215,8 @@ exports.getPositionsByProject = async (req, res) => {
           SELECT p.id,
                  p.title,
                  p.description,
+                 p.qualifications,
+                 p.duties,
                  jsonb_build_object(
                    'label', l.label,
                    'id', l.id
