@@ -152,6 +152,8 @@ exports.getPositionById = async (req, res) => {
           p.id,
           p.title, 
           p.description,
+          p.qualifications,
+          p.duties,
           jsonb_build_object(
             'label', l.label,
             'id', l.id
