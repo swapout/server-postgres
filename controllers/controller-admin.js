@@ -1,22 +1,20 @@
-const { pool } = require('../config/db')
-const format = require('pg-format');
+const { pool } = require("../config/db");
+const format = require("pg-format");
 
-const technologies = require('../data/technologies')
-const languages = require('../data/languages')
-const roles = require('../data/roles')
-const levels = require('../data/levels')
+const technologies = require("../data/technologies");
+const languages = require("../data/languages");
+const roles = require("../data/roles");
+const levels = require("../data/levels");
 
 exports.createTables = async (req, res) => {
-
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
   try {
-
     await client.query(
       `
         CREATE TYPE status AS enum ('accepted', 'declined', 'pending');
       `
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS users (
@@ -43,7 +41,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS reset_password_tokens (
@@ -52,7 +50,7 @@ exports.createTables = async (req, res) => {
         token TEXT NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS projects (
@@ -65,7 +63,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS collaborators (
@@ -77,13 +75,15 @@ exports.createTables = async (req, res) => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, project_id)
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS positions (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
+        qualifications TEXT,
+        duties TEXT,
         level INTEGER NOT NULL DEFAULT 1,
         role INTEGER NOT NULL,
         vacancies INTEGER default 1,
@@ -92,7 +92,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS technologies (
@@ -102,7 +102,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS languages (
@@ -112,7 +112,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS roles (
@@ -122,7 +122,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS levels (
@@ -132,7 +132,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS positions_technologies_relations (
@@ -142,7 +142,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS positions_applications_relations (
@@ -154,7 +154,7 @@ exports.createTables = async (req, res) => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, position_id)
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS projects_technologies_relations (
@@ -164,7 +164,7 @@ exports.createTables = async (req, res) => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS users_languages_relations (
@@ -173,7 +173,7 @@ exports.createTables = async (req, res) => {
         language_id INTEGER NOT NULL REFERENCES languages(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
+    );
 
     await client.query(
       `CREATE TABLE IF NOT EXISTS users_technologies_relations (
@@ -182,24 +182,24 @@ exports.createTables = async (req, res) => {
         technology_id INTEGER NOT NULL REFERENCES technologies(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`
-    )
-    await client.query('COMMIT')
-    res.send('Tables created')
+    );
+    await client.query("COMMIT");
+    res.send("Tables created");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.deleteEverything = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
     await client.query(
@@ -225,26 +225,26 @@ exports.deleteEverything = async (req, res) => {
         DROP TABLE IF EXISTS languages;
         DROP TYPE IF EXISTS status;
       `
-    )
+    );
 
-    await client.query('COMMIT')
-    res.send('Tables were deleted')
+    await client.query("COMMIT");
+    res.send("Tables were deleted");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.clearAllTables = async (req, res) => {
-  const client = await pool.connect()
+  const client = await pool.connect();
   try {
-    await client.query('BEGIN')
+    await client.query("BEGIN");
     await client.query(
       `DELETE FROM users_languages_relations;
        DELETE FROM users_technologies_relations;
@@ -257,174 +257,160 @@ exports.clearAllTables = async (req, res) => {
        DELETE FROM bearer_tokens;
        DELETE FROM reset_password_tokens;
        DELETE FROM users;`
-    )
-    await client.query('COMMIT')
-    res.send('All tables were emptied')
-
+    );
+    await client.query("COMMIT");
+    res.send("All tables were emptied");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.addTechnologies = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
     // TODO: add email check when user routes were created
     const updatedTechnologies = technologies.map((tech) => {
-      return [
-        tech.name,
-        'accepted'
-      ]
-    })
+      return [tech.name, "accepted"];
+    });
 
-    const sql = format(`
+    const sql = format(
+      `
       INSERT INTO technologies (label, status)
       VALUES %L;
       `,
       updatedTechnologies
-    )
+    );
 
-    await client.query(sql)
-    await client.query('COMMIT')
+    await client.query(sql);
+    await client.query("COMMIT");
 
-    return res.send('Technologies were added')
-
+    return res.send("Technologies were added");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.addLanguages = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
     // TODO: add email check when user routes were created
     const updatedLanguages = languages.map((lang) => {
-      return [
-        lang.name,
-        lang.code
-      ]
-    })
+      return [lang.name, lang.code];
+    });
 
-    const sql = format(`
+    const sql = format(
+      `
       INSERT INTO languages (label, code)
       VALUES %L;
       `,
       updatedLanguages
-      )
+    );
 
-    await client.query(sql)
-    await client.query('COMMIT')
+    await client.query(sql);
+    await client.query("COMMIT");
 
-    return res.send('Languages were added')
-
+    return res.send("Languages were added");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.addRoles = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
     const updatedRoles = roles.map((role) => {
-      return [
-        role.label,
-        'accepted'
-      ]
-    })
+      return [role.label, "accepted"];
+    });
 
-    const sql = format(`
+    const sql = format(
+      `
       INSERT INTO roles (label, status)
       VALUES %L;
       `,
       updatedRoles
-    )
+    );
 
-    await client.query(sql)
-    await client.query('COMMIT')
+    await client.query(sql);
+    await client.query("COMMIT");
 
-    return res.send('Roles were added')
-
+    return res.send("Roles were added");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.addLevels = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
     const updatedLevels = levels.map((level) => {
-      return [
-        level.name,
-        'accepted'
-      ]
-    })
+      return [level.name, "accepted"];
+    });
 
-    const sql = format(`
+    const sql = format(
+      `
       INSERT INTO levels (label, status)
       VALUES %L;
       `,
       updatedLevels
-    )
+    );
 
-    await client.query(sql)
-    await client.query('COMMIT')
+    await client.query(sql);
+    await client.query("COMMIT");
 
-    return res.send('Levels were added')
-
+    return res.send("Levels were added");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.createViews = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   try {
-
     await client.query(
       `
         CREATE VIEW user_lang AS
@@ -433,7 +419,7 @@ exports.createViews = async (req, res) => {
           JOIN languages AS l ON l.id = ulr.language_id
           JOIN users AS u ON u.id = ulr.user_id;
       `
-    )
+    );
     await client.query(
       `
         CREATE VIEW user_tech AS
@@ -442,7 +428,7 @@ exports.createViews = async (req, res) => {
           JOIN technologies AS t ON t.id = utr.technology_id
           JOIN users AS u ON u.id = utr.user_id;
       `
-    )
+    );
 
     await client.query(
       `
@@ -452,7 +438,7 @@ exports.createViews = async (req, res) => {
           JOIN technologies AS t ON t.id = ptr.technology_id
           JOIN projects AS p ON p.id = ptr.project_id;
       `
-    )
+    );
 
     await client.query(
       `
@@ -462,17 +448,17 @@ exports.createViews = async (req, res) => {
           JOIN technologies AS t ON t.id = ptr.technology_id
           JOIN positions AS p ON p.id = ptr.position_id;
       `
-    )
-    await client.query('COMMIT')
-    return res.send('Views were added')
+    );
+    await client.query("COMMIT");
+    return res.send("Views were added");
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error.message)
+    await client.query("ROLLBACK");
+    console.log(error.message);
     return res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
