@@ -1,55 +1,64 @@
-const { pool } = require('../config/db')
-const moment = require('moment')
-const format = require('pg-format')
+const { pool } = require("../config/db");
+const moment = require("moment");
+const format = require("pg-format");
 
-const {normalizePosition} = require('../helpers/normalize')
-const { insertPositionTech, fetchPositionTech, deletePositionTech } = require('../helpers/helper-queries')
+const { normalizePosition } = require("../helpers/normalize");
+const {
+  insertPositionTech,
+  fetchPositionTech,
+  deletePositionTech,
+} = require("../helpers/helper-queries");
 
 exports.createPosition = async (req, res) => {
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
 
   // Get user ID from decoded token
-  const userId = req.body.decoded.id
+  const userId = req.body.decoded.id;
 
   // Get position details from request
   const position = {
     title: req.body.position.title,
     description: req.body.position.description,
+    qualifications: req.body.position.qualifications,
+    duties: req.body.position.duties,
     project: req.body.position.projectId,
     level: req.body.position.level,
     role: req.body.position.role,
     technologies: req.body.position.technologies,
     vacancies: req.body.position.vacancies,
-  }
+  };
 
   try {
-
     // Save position to DB
     const savedPosition = await client.query(
       `
         INSERT INTO positions (
             title, 
             description, 
+            qualifications,
+            duties,
             project_id, 
             vacancies, 
             user_id, 
             level, 
             role
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `,
       [
         position.title,
         position.description,
+        position.qualifications,
+        position.duties,
         position.project,
         position.vacancies,
         userId,
         position.level,
-        position.role
+        position.role,
       ]
-    )
+    );
 
     // Get role label
     const role = await client.query(
@@ -62,9 +71,7 @@ exports.createPosition = async (req, res) => {
         where id = $1;
       `,
       [savedPosition.rows[0].role]
-    )
-
-    console.log(role.rows[0].role)
+    );
 
     // Get level label
     const level = await client.query(
@@ -77,11 +84,11 @@ exports.createPosition = async (req, res) => {
         where id = $1;
       `,
       [savedPosition.rows[0].level]
-    )
+    );
 
     // Assign role and level label to the position
-    savedPosition.rows[0].role = role.rows[0].role
-    savedPosition.rows[0].level = level.rows[0].level
+    savedPosition.rows[0].role = role.rows[0].role;
+    savedPosition.rows[0].level = level.rows[0].level;
 
     // Change project has positions to true
     await client.query(
@@ -92,10 +99,14 @@ exports.createPosition = async (req, res) => {
         RETURNING *;
       `,
       [position.project]
-    )
+    );
 
     // Add technologies to position
-    await insertPositionTech(position.technologies, savedPosition.rows[0].id, client)
+    await insertPositionTech(
+      position.technologies,
+      savedPosition.rows[0].id,
+      client
+    );
     const positionTech = await client.query(
       `
         SELECT jsonb_agg(
@@ -108,32 +119,31 @@ exports.createPosition = async (req, res) => {
         WHERE position_id = $1;
       `,
       [savedPosition.rows[0].id]
-    )
+    );
 
-    savedPosition.rows[0].technologies = positionTech.rows[0].technologies
+    savedPosition.rows[0].technologies = positionTech.rows[0].technologies;
 
-      await client.query('COMMIT')
+    await client.query("COMMIT");
     return res.status(201).json({
       status: 201,
-      message: 'position added successfully',
-      position: normalizePosition(savedPosition.rows)
-    })
-
+      message: "position added successfully",
+      position: normalizePosition(savedPosition.rows),
+    });
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error)
+    await client.query("ROLLBACK");
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.getPositionById = async (req, res) => {
   // Get project ID
-  const positionId = req.params.id
+  const positionId = req.params.id;
   try {
     // Get project by ID and join it with tech
     const foundPosition = await pool.query(
@@ -169,32 +179,32 @@ exports.getPositionById = async (req, res) => {
         GROUP BY p.title, p.id, r.label, l.label, l.id, r.id;
       `,
       [positionId]
-    )
+    );
     // If no positions found
-    if(foundPosition.rows.length === 0) {
+    if (foundPosition.rows.length === 0) {
       return res.status(400).json({
         status: 400,
-        message: 'No positions found with this ID'
-      })
+        message: "No positions found with this ID",
+      });
     }
 
     return res.status(200).json({
       status: 200,
-      message: 'Position found',
-      position: normalizePosition(foundPosition.rows)
-    })
+      message: "Position found",
+      position: normalizePosition(foundPosition.rows),
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 exports.getPositionsByProject = async (req, res) => {
   // Get project ID
-  const projectId = req.params.id
+  const projectId = req.params.id;
 
   try {
     // Get positions belonging to a project and has vacancies
@@ -240,64 +250,64 @@ exports.getPositionsByProject = async (req, res) => {
           ORDER BY title ASC;
       `,
       [projectId]
-    )
+    );
 
     // If no project found
-    if(foundPositions.rows.length === 0) {
+    if (foundPositions.rows.length === 0) {
       return res.status(200).json({
         status: 200,
-        message: 'This project doesn\'t have positions',
-        positions: []
-      })
+        message: "This project doesn't have positions",
+        positions: [],
+      });
     }
 
-    foundPositions.rows = stripEmptyObjectsFromArray(foundPositions.rows)
+    foundPositions.rows = stripEmptyObjectsFromArray(foundPositions.rows);
 
     return res.status(200).json({
       status: 200,
-      message: 'Get positions by project ID were successful',
-      positions: normalizePosition(foundPositions.rows, true)
-    })
+      message: "Get positions by project ID were successful",
+      positions: normalizePosition(foundPositions.rows, true),
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 exports.getAllPositions = async (req, res) => {
   // User ID from the token
-  const owner = req.body.decoded.id
+  const owner = req.body.decoded.id;
   // Page number, will be useful for pagination in the future
-  const page = req.query.page || 1
+  const page = req.query.page || 1;
   // Max items to show per page
-  const itemsPerPage = req.query.itemsPerPage || 9999
+  const itemsPerPage = req.query.itemsPerPage || 9999;
   // Calculate how many items to skip when using with pagination
-  const offset = (page - 1) * itemsPerPage
+  const offset = (page - 1) * itemsPerPage;
   // Sort type
-  const sort = req.query.sort
+  const sort = req.query.sort;
   // Create an empty sort object for the switch statement
-  let sortObj = {}
+  let sortObj = {};
   // A string of tech IDs separated by commas(no space between IDs after comma)
-  let technologies = req.query.technologies
+  let technologies = req.query.technologies;
   // Technology match type:
   // 'any' - positions that include any of the technology IDs
   //'all' - positions that include all of the technologies listed
-  let match = req.query.match || 'any'
+  let match = req.query.match || "any";
   // Text match of position name
-  let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`
+  let searchQuery = req.query.search ? `%${req.query.search}%` : `%%`;
   // Prepare the query
-  let sql
+  let sql;
   try {
     // If req.query.technologies exists or has any value
-    if(technologies) {
+    if (technologies) {
       //Split technology IDs string by comma
-      technologies = technologies.split(',')
+      technologies = technologies.split(",");
       // If the last element in the tech array is an empty string, remove it
-      if(technologies[technologies.length - 1] === '') {
-        technologies.pop()
+      if (technologies[technologies.length - 1] === "") {
+        technologies.pop();
       }
       // If there are not technologies, get all tech IDs from the technologies table
     } else {
@@ -309,52 +319,52 @@ exports.getAllPositions = async (req, res) => {
           ) AS technologies
           FROM technologies
         `
-      )
+      );
       // Simplify technologies
-      technologies = technologies.rows[0].technologies
+      technologies = technologies.rows[0].technologies;
     }
     // Form match string for SQL depending on req.query.match
     switch (match) {
-      case 'any':
-        match = '&&'
-        break
-      case 'all':
-        match = '@>'
-        break
+      case "any":
+        match = "&&";
+        break;
+      case "all":
+        match = "@>";
+        break;
       default:
-        match = '&&'
+        match = "&&";
     }
     // Create sort object based on the user input for the SQL query
     switch (sort) {
-      case 'nameasc':
+      case "nameasc":
         sortObj = {
-          sort: 'p.name',
-          direction: 'ASC'
-        }
-        break
-      case 'namedesc':
+          sort: "p.name",
+          direction: "ASC",
+        };
+        break;
+      case "namedesc":
         sortObj = {
-          sort: 'p.name',
-          direction: 'DESC'
-        }
-        break
-      case 'dateasc':
+          sort: "p.name",
+          direction: "DESC",
+        };
+        break;
+      case "dateasc":
         sortObj = {
-          sort: 'created_at',
-          direction: 'ASC'
-        }
-        break
-      case 'datedesc':
+          sort: "created_at",
+          direction: "ASC",
+        };
+        break;
+      case "datedesc":
         sortObj = {
-          sort: 'created_at',
-          direction: 'DESC'
-        }
-        break
+          sort: "created_at",
+          direction: "DESC",
+        };
+        break;
       default:
         sortObj = {
-          sort: 'created_at',
-          direction: 'DESC'
-        }
+          sort: "created_at",
+          direction: "DESC",
+        };
     }
 
     // Prepare dynamic SQL query and paste in the dynamic user input values and sanitize the query
@@ -400,35 +410,42 @@ exports.getAllPositions = async (req, res) => {
         offset %7$L
         limit %8$L;
       `,
-      technologies, match, searchQuery, owner, sortObj.sort, sortObj.direction, offset, itemsPerPage
-    )
+      technologies,
+      match,
+      searchQuery,
+      owner,
+      sortObj.sort,
+      sortObj.direction,
+      offset,
+      itemsPerPage
+    );
 
     // console.log(sql)
     // Send formed query
-    const foundPositions = await pool.query(sql)
+    const foundPositions = await pool.query(sql);
 
     return res.status(200).json({
       status: 200,
-      message: 'Get all positions with filters successful',
-      positions: normalizePosition(foundPositions.rows, true)
-    })
+      message: "Get all positions with filters successful",
+      positions: normalizePosition(foundPositions.rows, true),
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 exports.updatePositionById = async (req, res) => {
   // Create DB connection pool and start transaction
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
   // Get position ID
-  const positionId = req.params.id
+  const positionId = req.params.id;
   // Get user ID from token
-  const userId = req.body.decoded.id
+  const userId = req.body.decoded.id;
   // Prepare position for update
   const position = {
     title: req.body.position.title,
@@ -438,11 +455,10 @@ exports.updatePositionById = async (req, res) => {
     vacancies: req.body.position.vacancies,
     projectId: req.body.position.projectId,
     technologies: req.body.position.technologies,
-    updatedAt: moment()
-  }
+    updatedAt: moment(),
+  };
 
   try {
-
     // Verify that the user is the project owner
     const foundProject = await client.query(
       `
@@ -451,14 +467,14 @@ exports.updatePositionById = async (req, res) => {
       WHERE id = $1 AND owner = $2
     `,
       [position.projectId, userId]
-    )
+    );
 
     // If no projects found with this criteria
     if (foundProject.rows.length === 0) {
       return res.status(403).json({
         status: 403,
-        message: 'You are not authorized to edit this project'
-      })
+        message: "You are not authorized to edit this project",
+      });
     }
 
     // Check if technologies are in project technologies
@@ -473,17 +489,18 @@ exports.updatePositionById = async (req, res) => {
         ) as ptr on ptr.project_id = p.id
         where ptr.tech @> array[%1$L] and p.id = %2$L;
       `,
-      position.technologies, position.projectId
-    )
+      position.technologies,
+      position.projectId
+    );
     // Send formed query
-    const isProjectIncludesTech = await client.query(sql)
+    const isProjectIncludesTech = await client.query(sql);
 
     // If technologies are not included in the project
     if (!isProjectIncludesTech.rows.length) {
       return res.status(401).json({
         status: 401,
-        message: 'Technologies are not in project'
-      })
+        message: "Technologies are not in project",
+      });
     }
 
     // Update position with new values
@@ -499,8 +516,17 @@ exports.updatePositionById = async (req, res) => {
         WHERE id = $5 AND user_id = $6
         RETURNING id, title, description, level, role, vacancies, project_id, user_id, created_at, updated_at
       `,
-      [position.title, position.description, position.vacancies, position.updatedAt, positionId, userId, position.level, position.role]
-    )
+      [
+        position.title,
+        position.description,
+        position.vacancies,
+        position.updatedAt,
+        positionId,
+        userId,
+        position.level,
+        position.role,
+      ]
+    );
 
     const role = await client.query(
       `
@@ -513,7 +539,7 @@ exports.updatePositionById = async (req, res) => {
           where id = $1;
       `,
       [updatedPosition.rows[0].role]
-    )
+    );
     const level = await client.query(
       `
         select 
@@ -525,48 +551,52 @@ exports.updatePositionById = async (req, res) => {
           where id = $1;
       `,
       [updatedPosition.rows[0].level]
-    )
+    );
 
-    updatedPosition.rows[0].role = role.rows[0].role
-    updatedPosition.rows[0].level = level.rows[0].level
+    updatedPosition.rows[0].role = role.rows[0].role;
+    updatedPosition.rows[0].level = level.rows[0].level;
 
     // Delete old technologies relations
-    await deletePositionTech(updatedPosition.rows[0].id, client)
+    await deletePositionTech(updatedPosition.rows[0].id, client);
     // Add new technologies to relations
-    updatedPosition.rows[0].technologies = await insertPositionTech(position.technologies, updatedPosition.rows[0].id, client)
-    if(!updatedPosition.rows[0].technologies) {
+    updatedPosition.rows[0].technologies = await insertPositionTech(
+      position.technologies,
+      updatedPosition.rows[0].id,
+      client
+    );
+    if (!updatedPosition.rows[0].technologies) {
       return res.status(404).json({
         status: 404,
-        message: 'There was a problem processing technologies'
-      })
+        message: "There was a problem processing technologies",
+      });
     }
 
-    await client.query('COMMIT')
+    await client.query("COMMIT");
     return res.status(200).json({
       status: 200,
-      message: 'Successfully updated position',
-      position: normalizePosition(updatedPosition.rows)
-    })
+      message: "Successfully updated position",
+      position: normalizePosition(updatedPosition.rows),
+    });
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error)
+    await client.query("ROLLBACK");
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 exports.deletePositionById = async (req, res) => {
   // Create DB connection pool and start transaction
-  const client = await pool.connect()
-  await client.query('BEGIN')
+  const client = await pool.connect();
+  await client.query("BEGIN");
   // Get position ID from the query string
-  const positionId = req.params.id
+  const positionId = req.params.id;
   // Get the user ID from the token
-  const userId = req.body.decoded.id
+  const userId = req.body.decoded.id;
   try {
     // Delete position where user is owner of the position
     const deletedPosition = await pool.query(
@@ -576,17 +606,18 @@ exports.deletePositionById = async (req, res) => {
         RETURNING *;
       `,
       [positionId, userId]
-    )
+    );
 
     // If no positions got deleted
-    if(deletedPosition.rows.length === 0) {
-      console.log('No position found with this ID')
+    if (deletedPosition.rows.length === 0) {
+      console.log("No position found with this ID");
       return res.status(400).json({
         status: 400,
-        message: 'Something went wrong',
-      })
+        message: "Something went wrong",
+      });
     }
 
+    // Get positions belonging to the project
     const positionsLeft = await pool.query(
       `
       select *
@@ -594,10 +625,11 @@ exports.deletePositionById = async (req, res) => {
       where project_id = $1;
       `,
       [deletedPosition.rows[0].project_id]
-    )
+    );
 
-    if(positionsLeft.rows.length <= 1) {
-      console.log('project has no positions')
+    // Check if the project has more or equal than one position before deletion
+    if (positionsLeft.rows.length <= 1) {
+      console.log("project has no positions");
       await pool.query(
         `
         update projects
@@ -605,34 +637,32 @@ exports.deletePositionById = async (req, res) => {
         where id = $1;
         `,
         [deletedPosition.rows[0].project_id]
-      )
+      );
     }
 
-    console.log('project has positions')
-
-    await client.query('COMMIT')
+    await client.query("COMMIT");
     return res.status(200).json({
       status: 200,
-      message: 'Successfully deleted position',
+      message: "Successfully deleted position",
       position: {
-        id: deletedPosition.rows[0].id
-      }
-    })
+        id: deletedPosition.rows[0].id,
+      },
+    });
   } catch (error) {
-    await client.query('ROLLBACK')
-    console.log(error)
+    await client.query("ROLLBACK");
+    console.log(error);
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 const stripEmptyObjectsFromArray = (array) => {
   return array.map((item) => {
-    item.applicants = item.applicants.filter(el => Object.keys(el).length)
-    return item
-  })
-}
+    item.applicants = item.applicants.filter((el) => Object.keys(el).length);
+    return item;
+  });
+};
