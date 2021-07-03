@@ -454,6 +454,8 @@ exports.updatePositionById = async (req, res) => {
   const position = {
     title: req.body.position.title,
     description: req.body.position.description,
+    qualifications: req.body.position.qualifications,
+    duties: req.body.position.duties,
     level: req.body.position.level,
     role: req.body.position.role,
     vacancies: req.body.position.vacancies,
@@ -513,12 +515,14 @@ exports.updatePositionById = async (req, res) => {
         UPDATE positions
         SET title = $1, 
             description = $2,
+            qualifications = $9,
+            duties = $10,
             level = $7,
             role = $8, 
             vacancies = $3, 
             updated_at = $4
         WHERE id = $5 AND user_id = $6
-        RETURNING id, title, description, level, role, vacancies, project_id, user_id, created_at, updated_at
+        RETURNING id, title, description, qualifications, duties, level, role, vacancies, project_id, user_id, created_at, updated_at
       `,
       [
         position.title,
@@ -529,6 +533,8 @@ exports.updatePositionById = async (req, res) => {
         userId,
         position.level,
         position.role,
+        position.qualifications,
+        position.duties,
       ]
     );
 
