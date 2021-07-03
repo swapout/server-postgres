@@ -40,7 +40,9 @@ exports.getUserFeed = async (req, res) => {
             p.id, 
             p.user_id, 
             p.title, 
-            p.description, 
+            p.description,
+            p.qualifications,
+            p.duties,
             jsonb_build_object(
                 'label', l.label,
                 'id', l.id
@@ -70,7 +72,7 @@ exports.getUserFeed = async (req, res) => {
         JOIN roles AS r ON r.id = p.role
         JOIN levels AS l ON l.id = p.level
         WHERE pt2.position_id = ta.position_id
-        GROUP BY p.id, p.user_id, p.title, p.description, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
+        GROUP BY p.id, p.user_id, p.title, p.description, p.qualifications, p.duties, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
         ORDER BY p.created_at DESC
         LIMIT 10;
         `,

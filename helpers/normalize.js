@@ -151,6 +151,8 @@ exports.normalizeApplicantsFeed = (applicantsFeed, isArray = false) => {
         id: applicant.position_id,
         title: applicant.title,
         description: applicant.description,
+        qualifications: applicant.qualifications,
+        duties: applicant.duties,
       },
     };
   }
@@ -170,6 +172,8 @@ exports.normalizeApplicantsFeed = (applicantsFeed, isArray = false) => {
         id: applicant.position_id,
         title: applicant.title,
         description: applicant.description,
+        qualifications: applicant.qualifications,
+        duties: applicant.duties,
       },
     };
   });
