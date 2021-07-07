@@ -1,6 +1,6 @@
 /**
  * @description Contains all the user input constrains that are present
- * @type {{technologies: {minLength: number}, password: {minLength: number, pattern: RegExp, maxLength: number}, languages: {minLength: number}, bio: {maxLength: number}, email: {pattern: RegExp}, username: {minLength: number, maxLength: number}}}
+ * @type {{technologies: {minLength: number}, password: {minLength: number, pattern: regex, maxLength: number}, languages: {minLength: number}, bio: {maxLength: number}, email: {pattern: regex}, username: {minLength: number, maxLength: number}}}
  */
 exports.userConstrains = {
   email: {
