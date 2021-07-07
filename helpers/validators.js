@@ -1,6 +1,19 @@
 const { pool } = require("../config/db");
 const format = require("pg-format");
 
+/**
+ * @description Validator object that contains all reusable validator functions.
+ * @type {
+ * {
+ * validateTooLong: (function(any[] || string, number): boolean),
+ * validateIsExistsAsync: (function(string, string, any): boolean),
+ * validateRequiredFields: (function(string[], object): string[]),
+ * validateTooShort: (function(any[] || string, number): boolean),
+ * validateCompare: (function(string, string): boolean),
+ * validatePattern: (function(string, regex): boolean)
+ * }
+ * }
+ */
 exports.validator = {
   validatePattern: (value, regex) => {
     return !regex.test(value);
@@ -19,11 +32,7 @@ exports.validator = {
   },
   validateTooShort: (value, minLimit) => value.length < minLimit,
   validateTooLong: (value, maxLimit) => value.length > maxLimit,
-  validatePasswordShort: (password) => password.length < 8,
-  validatePasswordLong: (password) => password.length > 128,
   validateCompare: (value, confirmValue) => value !== confirmValue,
-  validateTechnologies: (technologies) => technologies.length === 0,
-  validateLanguages: (languages) => languages.length === 0,
   validateRequiredFields: (requiredFields, comparator) => {
     return requiredFields.filter((field) => {
       if (!comparator.hasOwnProperty(field)) {
