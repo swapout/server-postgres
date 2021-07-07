@@ -1,34 +1,27 @@
 const { pool } = require("../config/db");
+const format = require("pg-format");
 
-exports.userValidator = {
-  validateEmailPattern: (email) => {
-    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    return !emailRegex.test(email);
+exports.validator = {
+  validatePattern: (value, regex) => {
+    return !regex.test(value);
   },
-  validateUsernameAsync: async (username) => {
-    const isExists = await pool.query(
+  validateIsExistsAsync: async (table, column, value) => {
+    const sql = format(
       `
-        select exists(select 1 from users where username = $1) AS "exists"
+        select exists(select 1 from %1$s where %2$s = %3$L) AS "exists"
       `,
-      [username]
+      table,
+      column,
+      value
     );
+    const isExists = await pool.query(sql);
     return isExists.rows[0].exists;
   },
-  validateUsernameShort: (username) => username.length < 3,
-  validateUsernameLong: (username) => username.length > 20,
-  validateEmailAsync: async (email) => {
-    const isExists = await pool.query(
-      `
-        select exists(select 1 from users where email = $1) AS "exists"
-      `,
-      [email]
-    );
-    return isExists.rows[0].exists;
-  },
+  validateTooShort: (value, minLimit) => value.length < minLimit,
+  validateTooLong: (value, maxLimit) => value.length > maxLimit,
   validatePasswordShort: (password) => password.length < 8,
   validatePasswordLong: (password) => password.length > 128,
-  validateComparePasswords: (password, confirmPassword) =>
-    password !== confirmPassword,
+  validateCompare: (value, confirmValue) => value !== confirmValue,
   validateTechnologies: (technologies) => technologies.length === 0,
   validateLanguages: (languages) => languages.length === 0,
   validateRequiredFields: (requiredFields, comparator) => {
