@@ -1,7 +1,7 @@
 const { validator } = require("../../helpers/validators");
 const { projectConstrains } = require("../../data/validation-constrains");
 
-exports.createProjectValidation = async (req, res, next) => {
+exports.projectValidation = async (req, res, next) => {
   try {
     // Get project data from the request body
     const { project } = req.body;
