@@ -1,106 +1,93 @@
-const { pool } = require('../../config/db')
+const { validator } = require("../../helpers/validators");
+const { projectConstrains } = require("../../data/validation-constrains");
 
 exports.createProjectValidation = async (req, res, next) => {
-  const { project } = req.body
-  // List of validation errors on project creation
-  const validationErrors = {
-    invalidUserId: false,
-    nameFieldMissing: false,
-    nameRequired: false,
-    nameShort: false,
-    nameLong: false,
-    descriptionFieldMissing: false,
-    descriptionRequired: false,
-    descriptionShort: false,
-    descriptionLong: false,
-    technologiesFieldMissing: false,
-    projectURLFieldMissing: false,
-    projectURLShort: false,
-    projectURLLong: false,
-  }
-
   try {
-    // Check if user ID is in the users table
-    const isUser = await pool.query(
-      `
-        select exists(select 1 from users where id = $1) AS "exists"
-      `,
-      [req.body.decoded.id]
-    )
+    // Get project data from the request body
+    const { project } = req.body;
 
-    // Add user exists to the error object depending on the result of the SQL query
-    validationErrors.invalidUserId = !isUser.rows[0].exists
+    // Initialize variables
+    let validationErrors = {};
+    let missingFields;
+    // List fields that must be present on the request body
+    const requiredFields = [
+      "name",
+      "description",
+      "mission",
+      "technologies",
+      "projectURL",
+    ];
 
-    // Check if key, name exists on project
-    if(project.hasOwnProperty("name")) {
+    // Check if all required fields are present and add missing ones to missing fields variable
+    missingFields = validator.validateRequiredFields(requiredFields, project);
 
-      // Check if name field is not empty
-      if(!project.name) {
-        validationErrors.nameRequired = true
-      } else {
-        // Check if name is to short
-        validationErrors.nameShort = !(project.name.length >= 3)
-
-        // Check if name is too long
-        validationErrors.nameLong = !(project.name.length <= 255)
-      }
-
-    } else {
-      // If field doesn't exists on req.body
-      validationErrors.nameFieldMissing = true
-    }
-
-    // Check if key, description exists on project
-    if(project.hasOwnProperty("description")) {
-
-      // Check if description field is not empty
-      if(!project.description) {
-        validationErrors.descriptionRequired = true
-      } else {
-        // Check if description is to short
-        validationErrors.descriptionShort = !(project.description.length >= 10)
-
-        // Check if description is too long
-        validationErrors.descriptionLong = !(project.description.length <= 65535)
-      }
-
-    } else {
-      // If field doesn't exists on req.body
-      validationErrors.descriptionFieldMissing = true
-    }
-
-    // Check if technologies key exists on project
-    validationErrors.technologiesFieldMissing = !project.hasOwnProperty("technologies")
-
-    // Check if key, projectURL exists on project
-    if(project.hasOwnProperty("projectURL")) {
-      // Check if projectURL field is not empty
-      if(project.projectURL) {
-        // Check if projectURL is to short
-        validationErrors.projectURLShort = !(project.projectURL.length >= 4)
-
-        // Check if projectURL is too long
-        validationErrors.projectURLLong = !(project.projectURL.length <= 255)
-      }
-    } else {
-      validationErrors.projectURLFieldMissing = true
+    // If there are no missing fields on req.body
+    if (missingFields.length === 0) {
+      // Add and validate each field
+      validationErrors = {
+        // Check if project name is too short
+        nameShort: validator.validateTooShort(
+          project.name,
+          projectConstrains.name.minLength
+        ),
+        // Check if project name is too long
+        nameLong: validator.validateTooLong(
+          project.name,
+          projectConstrains.name.maxLength
+        ),
+        // Check if project description is too short
+        descriptionShort: validator.validateTooShort(
+          project.description,
+          projectConstrains.description.minlength
+        ),
+        // Check if project description is too long
+        descriptionLong: validator.validateTooLong(
+          project.description,
+          projectConstrains.description.maxLength
+        ),
+        // Check if project mission is too short
+        missionShort: validator.validateTooShort(
+          project.mission,
+          projectConstrains.mission.minLength
+        ),
+        // Check if project mission is too long
+        missionLong: validator.validateTooLong(
+          project.mission,
+          projectConstrains.mission.maxLength
+        ),
+        // Check if project technologies is too short
+        technologiesRequired: validator.validateTooShort(
+          project.technologies,
+          projectConstrains.technologies.minLength
+        ),
+        // Check if project URL is a valid url pattern
+        invalidProjectURL: validator.validatePattern(
+          project.projectURL,
+          projectConstrains.projectURL.pattern
+        ),
+      };
     }
 
     // Loop through the validation error object and see if any of them is true
-    if(Object.values(validationErrors).includes(true)) {
+    // or if there are no missing fields
+    if (
+      Object.values(validationErrors).includes(true) ||
+      missingFields.length > 0
+    ) {
       return res.status(400).json({
         status: 400,
-        message: 'Validation errors',
-        validationErrors
-      })
+        message: "Validation errors",
+        validationErrors,
+        missingFields,
+      });
     }
 
-    next()
+    next();
   } catch (error) {
-    console.log(error.message)
+    console.log(error.message);
     res.status(500).json({
       status: 500,
-      message: 'Server error'
-    })
+      message: "Server error",
+    });
   }
-}
+};

@@ -1,19 +1,6 @@
 const { pool } = require("../config/db");
 const format = require("pg-format");
 
-/**
- * @description Validator object that contains all reusable validator functions.
- * @type {
- * {
- * validateTooLong: (function(any[] || string, number): boolean),
- * validateIsExistsAsync: (function(string, string, any): boolean),
- * validateRequiredFields: (function(string[], object): string[]),
- * validateTooShort: (function(any[] || string, number): boolean),
- * validateCompare: (function(string, string): boolean),
- * validatePattern: (function(string, regex): boolean)
- * }
- * }
- */
 exports.validator = {
   validatePattern: (value, regex) => {
     return !regex.test(value);

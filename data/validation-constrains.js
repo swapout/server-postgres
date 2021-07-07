@@ -25,3 +25,25 @@ exports.userConstrains = {
     maxLength: 65535,
   },
 };
+
+exports.projectConstrains = {
+  name: {
+    minLength: 3,
+    maxLength: 255,
+  },
+  description: {
+    minlength: 10,
+    maxLength: 65535,
+  },
+  mission: {
+    minLength: 10,
+    maxLength: 65535,
+  },
+  technologies: {
+    minLength: 1,
+  },
+  projectURL: {
+    pattern:
+      /(https?:\/\/)?([\w-])+\.{1}([a-zA-Z]{2,63})([/\w-]*)*\/?\??([^#\n\r]*)?#?([^\n\r]*)/,
+  },
+};
