@@ -47,3 +47,27 @@ exports.projectConstrains = {
       /(https?:\/\/)?([\w-])+\.{1}([a-zA-Z]{2,63})([/\w-]*)*\/?\??([^#\n\r]*)?#?([^\n\r]*)/,
   },
 };
+
+exports.positionConstrains = {
+  title: {
+    minLength: 3,
+    maxLength: 255,
+  },
+  description: {
+    minLength: 10,
+    maxLength: 65535,
+  },
+  qualifications: {
+    maxLength: 65535,
+  },
+  duties: {
+    maxLength: 65535,
+  },
+  technologies: {
+    minLength: 1,
+  },
+  vacancies: {
+    minLimit: 1,
+    maxLimit: 10,
+  },
+};

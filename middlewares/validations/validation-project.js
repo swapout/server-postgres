@@ -3,6 +3,8 @@ const { projectConstrains } = require("../../data/validation-constrains");
 
 exports.projectValidation = async (req, res, next) => {
   try {
+    // Get user ID from decoded token
+    const userId = req.body.decoded.id;
     // Get project data from the request body
     const { project } = req.body;
 
@@ -25,6 +27,11 @@ exports.projectValidation = async (req, res, next) => {
     if (missingFields.length === 0) {
       // Add and validate each field
       validationErrors = {
+        invalidUserId: !(await validator.validateIsExistsAsync(
+          "users",
+          "id",
+          userId
+        )),
         // Check if project name is too short
         nameShort: validator.validateTooShort(
           project.name,
