@@ -68,10 +68,12 @@ exports.projectValidation = async (req, res, next) => {
           projectConstrains.technologies.minLength
         ),
         // Check if project URL is a valid url pattern
-        invalidProjectURL: validator.validatePattern(
-          project.projectURL,
-          projectConstrains.projectURL.pattern
-        ),
+        invalidProjectURL: project.projectURL
+          ? validator.validatePattern(
+              project.projectURL,
+              projectConstrains.projectURL.pattern
+            )
+          : false,
       };
     }
 
