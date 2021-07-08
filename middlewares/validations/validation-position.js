@@ -1,7 +1,7 @@
 const { validator } = require("../../helpers/validators");
 const { positionConstrains } = require("../../data/validation-constrains");
 
-exports.createPositionValidation = async (req, res, next) => {
+exports.positionValidation = async (req, res, next) => {
   try {
     // Get user ID from decoded token
     const userId = req.body.decoded.id;

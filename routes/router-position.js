@@ -1,4 +1,4 @@
-const express = require('express')
+const express = require("express");
 
 const {
   createPosition,
@@ -6,19 +6,21 @@ const {
   getPositionsByProject,
   getAllPositions,
   updatePositionById,
-  deletePositionById
-} = require('../controllers/controller-position')
+  deletePositionById,
+} = require("../controllers/controller-position");
 
-const { auth } = require('../middlewares/middleware-auth')
-const { createPositionValidation } = require('../middlewares/validations/validation-position')
+const { auth } = require("../middlewares/middleware-auth");
+const {
+  positionValidation,
+} = require("../middlewares/validations/validation-position");
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/', auth, createPositionValidation, createPosition)
-router.get('/', auth, getAllPositions)
-router.get('/project/:id', auth, getPositionsByProject)
-router.get('/:id', auth, getPositionById)
-router.patch('/:id', auth, updatePositionById)
-router.delete('/:id', auth, deletePositionById)
+router.post("/", auth, positionValidation, createPosition);
+router.get("/", auth, getAllPositions);
+router.get("/project/:id", auth, getPositionsByProject);
+router.get("/:id", auth, getPositionById);
+router.patch("/:id", auth, positionValidation, updatePositionById);
+router.delete("/:id", auth, deletePositionById);
 
-module.exports = router
+module.exports = router;
