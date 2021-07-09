@@ -62,7 +62,6 @@ exports.normalizePosition = (positionsArray, isArray = false) => {
     return {
       id: position.id,
       title: position.title,
-      description: position.description,
       qualifications: position.qualifications,
       duties: position.duties,
       role: position.role,
@@ -81,7 +80,6 @@ exports.normalizePosition = (positionsArray, isArray = false) => {
     return {
       id: position.id,
       title: position.title,
-      description: position.description,
       qualifications: position.qualifications,
       duties: position.duties,
       role: position.role,

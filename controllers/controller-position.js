@@ -19,7 +19,6 @@ exports.createPosition = async (req, res) => {
   // Get position details from request
   const position = {
     title: req.body.position.title,
-    description: req.body.position.description,
     qualifications: req.body.position.qualifications,
     duties: req.body.position.duties,
     project: req.body.position.projectId,
@@ -35,7 +34,6 @@ exports.createPosition = async (req, res) => {
       `
         INSERT INTO positions (
             title, 
-            description, 
             qualifications,
             duties,
             project_id, 
@@ -44,12 +42,11 @@ exports.createPosition = async (req, res) => {
             level, 
             role
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `,
       [
         position.title,
-        position.description,
         position.qualifications,
         position.duties,
         position.project,

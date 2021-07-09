@@ -15,7 +15,6 @@ exports.positionValidation = async (req, res, next) => {
     const requiredFields = [
       "projectId",
       "title",
-      "description",
       "qualifications",
       "duties",
       "level",
@@ -43,14 +42,6 @@ exports.positionValidation = async (req, res, next) => {
         titleLong: validator.validateTooLong(
           position.title,
           positionConstrains.title.maxLength
-        ),
-        descriptionShort: validator.validateTooShort(
-          position.description,
-          positionConstrains.description.minLength
-        ),
-        descriptionLong: validator.validateTooLong(
-          position.description,
-          positionConstrains.description.maxLength
         ),
         qualificationsLong: validator.validateTooLong(
           position.qualifications,
