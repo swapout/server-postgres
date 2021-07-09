@@ -82,7 +82,6 @@ exports.createTables = async (req, res) => {
       `CREATE TABLE IF NOT EXISTS positions (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL,
         qualifications TEXT,
         duties TEXT,
         level INTEGER NOT NULL DEFAULT 1,
