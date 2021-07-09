@@ -40,7 +40,6 @@ exports.getUserFeed = async (req, res) => {
             p.id, 
             p.user_id, 
             p.title, 
-            p.description,
             p.qualifications,
             p.duties,
             jsonb_build_object(
@@ -72,7 +71,7 @@ exports.getUserFeed = async (req, res) => {
         JOIN roles AS r ON r.id = p.role
         JOIN levels AS l ON l.id = p.level
         WHERE pt2.position_id = ta.position_id
-        GROUP BY p.id, p.user_id, p.title, p.description, p.qualifications, p.duties, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
+        GROUP BY p.id, p.user_id, p.title, p.qualifications, p.duties, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
         ORDER BY p.created_at DESC
         LIMIT 10;
         `,
@@ -105,7 +104,7 @@ exports.getUserFeed = async (req, res) => {
     // Get all applications, positions, users based on the last query IDs
     const applicationsSQL = format(
       `
-        select par.user_id, u.avatar, u.username, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl, u.bio, par.position_id, p.title, p.description
+        select par.user_id, u.avatar, u.username, u.githuburl, u.gitlaburl, u.bitbucketurl, u.linkedinurl, u.bio, par.position_id, p.title
         from positions_applications_relations par 
         join users u on par.user_id = u.id
         join positions p on par.position_id = p.id

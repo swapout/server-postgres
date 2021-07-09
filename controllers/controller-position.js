@@ -147,8 +147,7 @@ exports.getPositionById = async (req, res) => {
       `
         SELECT 
           p.id,
-          p.title, 
-          p.description,
+          p.title,
           p.qualifications,
           p.duties,
           jsonb_build_object(
@@ -211,7 +210,6 @@ exports.getPositionsByProject = async (req, res) => {
       `
           SELECT p.id,
                  p.title,
-                 p.description,
                  p.qualifications,
                  p.duties,
                  jsonb_build_object(
@@ -374,8 +372,7 @@ exports.getAllPositions = async (req, res) => {
         SELECT 
             p.id, 
             p.user_id, 
-            p.title, 
-            p.description, 
+            p.title,
             jsonb_build_object(
                 'label', l.label,
                 'id', l.id
@@ -406,7 +403,7 @@ exports.getAllPositions = async (req, res) => {
         JOIN roles AS r ON r.id = p.role
         JOIN levels AS l ON l.id = p.level
         WHERE pt2.position_id = ta.position_id
-        GROUP BY p.id, p.user_id, p.title, p.description, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
+        GROUP BY p.id, p.user_id, p.title, l.label, l.id, r.id, r.label, p.vacancies, p.project_id, p.created_at, p.updated_at
         order by %5$s %6$s
         offset %7$L
         limit %8$L;
@@ -450,7 +447,6 @@ exports.updatePositionById = async (req, res) => {
   // Prepare position for update
   const position = {
     title: req.body.position.title,
-    description: req.body.position.description,
     qualifications: req.body.position.qualifications,
     duties: req.body.position.duties,
     level: req.body.position.level,
@@ -510,20 +506,18 @@ exports.updatePositionById = async (req, res) => {
     const updatedPosition = await client.query(
       `
         UPDATE positions
-        SET title = $1, 
-            description = $2,
-            qualifications = $9,
-            duties = $10,
-            level = $7,
-            role = $8, 
-            vacancies = $3, 
-            updated_at = $4
-        WHERE id = $5 AND user_id = $6
-        RETURNING id, title, description, qualifications, duties, level, role, vacancies, project_id, user_id, created_at, updated_at
+        SET title = $1,
+            qualifications = $8,
+            duties = $9,
+            level = $6,
+            role = $7, 
+            vacancies = $2, 
+            updated_at = $3
+        WHERE id = $4 AND user_id = $5
+        RETURNING id, title, qualifications, duties, level, role, vacancies, project_id, user_id, created_at, updated_at
       `,
       [
         position.title,
-        position.description,
         position.vacancies,
         position.updatedAt,
         positionId,
