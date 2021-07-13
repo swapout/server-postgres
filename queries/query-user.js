@@ -30,4 +30,4 @@ class UserQuery {
   }
 }
 
-module.exports = UserQuery;
+exports.UserQuery = UserQuery;

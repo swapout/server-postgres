@@ -20,7 +20,7 @@ const {
 } = require("../helpers/helper-queries");
 const { createAndSaveBearerToken } = require("../helpers/helper-tokens");
 
-const UserService = require("../services/UserService");
+const { UserService } = require("../services/UserService");
 
 exports.createUser = async (req, res) => {
   let client = await pool.connect();

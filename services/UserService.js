@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const gravatar = require("gravatar");
-const UserQuery = require("../queries/query-user");
+const { UserQuery } = require("../queries/query-user");
 const { createAndSaveBearerToken } = require("../helpers/helper-tokens");
 const { verifyAndCreateSocial } = require("../helpers/helper-social");
 const {
@@ -61,4 +61,4 @@ class UserService {
   }
 }
 
-module.exports = UserService;
+exports.UserService = UserService;
