@@ -1,11 +1,11 @@
 {
-  "name": "server-mysql",
+  "name": "server-postgres",
   "version": "1.0.0",
-  "description": "server-mysql",
+  "description": "server-postgres",
   "main": "server.js",
   "scripts": {
     "dev": "NODE_ENV=dev nodemon",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -25,12 +25,13 @@
     "express": "^4.17.1",
     "gravatar": "^1.8.1",
     "jsonwebtoken": "^8.5.1",
-    "mailgun-js": "^0.22.0",
+    "mailgun-js": "^0.6.7",
     "moment": "^2.29.1",
     "pg": "^8.5.1",
     "pg-format": "^1.0.4"
   },
   "devDependencies": {
-    "faker": "^5.5.3"
+    "faker": "^5.5.3",
+    "jest": "^27.0.6"
   }
 }
