@@ -1,7 +1,7 @@
 const { pool } = require("../../config/db");
 const { UserService } = require("../../services/UserService");
 
-describe("Create User with valid values", () => {
+describe("Should create user with valid values", () => {
   let user;
   let randomNumber;
   beforeEach(() => {
