@@ -38,7 +38,7 @@ class UserService {
     let savedUser = response.savedUser;
 
     // Create and save bearer_token to DB
-    const bearer_token = await createAndSaveBearerToken(savedUser, client);
+    const token = await createAndSaveBearerToken(savedUser, client);
 
     // Insert technologies and languages to DB and receive the formatted arrays back
     savedUser.technologies = await insertUserTech(
@@ -55,7 +55,7 @@ class UserService {
 
     return {
       savedUser,
-      bearer_token,
+      token,
       client,
     };
   }

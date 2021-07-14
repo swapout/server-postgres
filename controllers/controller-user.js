@@ -30,7 +30,7 @@ exports.createUser = async (req, res) => {
     let user = req.body.user;
     const response = await UserService.prototype.createUser(user, client);
 
-    const { savedUser, bearer_token } = response;
+    const { savedUser, token } = response;
     client = response.client;
 
     await client.query("COMMIT");
@@ -38,7 +38,7 @@ exports.createUser = async (req, res) => {
     return res.status(201).json({
       status: 201,
       message: "User created",
-      token: bearer_token,
+      token,
       user: savedUser,
     });
   } catch (error) {

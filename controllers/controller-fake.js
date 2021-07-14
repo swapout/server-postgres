@@ -20,7 +20,7 @@ const {
 const { createAndSaveBearerToken } = require("../helpers/helper-tokens");
 
 exports.fakeUser = async (req, res) => {
-  let numberOfFakeUsers = req.body.fake;
+  let numberOfFakeUsers = req.body.fake || 1;
   const hash = req.body.hash || true;
   const bearer = req.body.bearer || true;
   const bio = req.body.bio || true;
