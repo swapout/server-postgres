@@ -14,8 +14,6 @@ const {
 
 class UserService {
   async createUser(user, client) {
-    // Lower case email address
-    user.email = user.email.toLowerCase();
     // Hash password
     user.password = await bcrypt.hash(user.password, 11);
 

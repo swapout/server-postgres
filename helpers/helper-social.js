@@ -1,9 +1,5 @@
 // Creates social profiles URLs based on usernames
 exports.verifyAndCreateSocial = (user) => {
-  user.githubURL = user.githubURL.trim();
-  user.gitlabURL = user.gitlabURL.trim();
-  user.bitbucketURL = user.bitbucketURL.trim();
-  user.linkedinURL = user.linkedinURL.trim();
   if (user.githubURL !== "") {
     user.githubURL = `https://github.com/${user.githubURL}`;
   }

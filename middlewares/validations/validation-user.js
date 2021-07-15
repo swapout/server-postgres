@@ -26,6 +26,16 @@ exports.registerUserValidation = async (req, res, next) => {
     // Check if all required fields are present and add missing ones to missing fields variable
     missingFields = validator.validateRequiredFields(requiredFields, user);
 
+    // Lower case email address
+    user.email = user.email.toLowerCase();
+    //Trim user values that shouldn't have spaces before or after
+    user.username = user.username.trim();
+    user.password = user.password.trim();
+    user.githubURL = user.githubURL.trim();
+    user.gitlabURL = user.gitlabURL.trim();
+    user.bitbucketURL = user.bitbucketURL.trim();
+    user.linkedinURL = user.linkedinURL.trim();
+
     // If there are no missing fields on req.body
     if (missingFields.length === 0) {
       // Add and validate each field
@@ -71,6 +81,28 @@ exports.registerUserValidation = async (req, res, next) => {
         passwordMatch: validator.validateCompare(
           user.password,
           user.confirmPassword
+        ),
+        githubURLLong: validator.validateTooLong(
+          user.githubURL,
+          userConstrains.githubURL.maxLength
+        ),
+        gitlabURLLong: validator.validateTooLong(
+          user.gitlabURL,
+          userConstrains.gitlabURL.maxLength
+        ),
+        bitbucketURLLong: validator.validateTooLong(
+          user.bitbucketURL,
+          userConstrains.bitbucketURL.maxLength
+        ),
+        linkedinURLShort: user.linkedinURL
+          ? validator.validateTooShort(
+              user.linkedinURL,
+              userConstrains.linkedinURL.minLength
+            )
+          : false,
+        linkedinURLLong: validator.validateTooLong(
+          user.linkedinURL,
+          userConstrains.linkedinURL.maxLength
         ),
         // Compare technologies against user validation constrains min technologies length
         technologiesRequired: validator.validateTooShort(

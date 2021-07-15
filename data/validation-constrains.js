@@ -15,6 +15,19 @@ exports.userConstrains = {
     minLength: 8,
     maxLength: 128,
   },
+  githubURL: {
+    maxLength: 39,
+  },
+  gitlabURL: {
+    maxLength: 255,
+  },
+  bitbucketURL: {
+    maxLength: 30,
+  },
+  linkedinURL: {
+    minLength: 5,
+    maxLength: 30,
+  },
   technologies: {
     minLength: 1,
   },
