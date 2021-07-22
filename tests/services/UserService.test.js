@@ -23,7 +23,7 @@ describe("Should create user with valid values", () => {
 
   test("should return a real user with no errors", async () => {
     const tempUser = { ...user };
-    const response = await UserService.prototype.createUser(user, pool);
+    const response = await UserService.createUser(user, pool);
     expect(response.savedUser).toBeInstanceOf(Object);
     expect(typeof response.token).toBe("string");
     expect(response.savedUser).toMatchObject({

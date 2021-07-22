@@ -29,7 +29,7 @@ exports.createUser = async (req, res) => {
   try {
     let user = req.body.user;
 
-    const response = await UserService.prototype.createUser(user, client);
+    const response = await UserService.createUser(user, client);
 
     const { savedUser, token } = response;
     client = response.client;

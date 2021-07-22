@@ -1,8 +1,7 @@
 const { normalizeUser } = require("../helpers/normalize");
-const { pool } = require("../config/db");
 
 class UserQuery {
-  async insertUser(user, client) {
+  static async insertUser(user, client) {
     // Inserts user into user table
     const response = await client.query(
       `

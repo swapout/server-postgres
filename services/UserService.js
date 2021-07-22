@@ -13,7 +13,7 @@ const {
 } = require("../helpers/helper-queries");
 
 class UserService {
-  async createUser(user, client) {
+  static async createUser(user, client) {
     // Hash password
     user.password = await bcrypt.hash(user.password, 11);
 
@@ -30,7 +30,7 @@ class UserService {
     // Verify and create social profiles
     user = verifyAndCreateSocial(user);
 
-    const response = await UserQuery.prototype.insertUser(user, client);
+    const response = await UserQuery.insertUser(user, client);
 
     client = response.client;
     let savedUser = response.savedUser;
