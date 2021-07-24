@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken')
-const config = require('config')
-const { pool } = require('../config/db')
+const jwt = require("jsonwebtoken");
+const config = require("config");
+const { pool } = require("../config/db");
 
 /**
  * Authentication middleware,
@@ -15,38 +15,41 @@ const { pool } = require('../config/db')
  */
 exports.auth = async (req, res, next) => {
   try {
+    console.log("req.cookies: ", req.cookies);
+    console.log("req.signedCookies: ", req.signedCookies);
+    console.log("req.headers: ", req.headers);
     // Gets token from header
-    const token = req.headers.authorization?.split(' ')[1]
+    const token = req.headers.authorization?.split(" ")[1];
 
     // Gets token secret
-    const bearerTokenSecret = config.get('bearerTokenSecret')
+    const bearerTokenSecret = config.get("bearerTokenSecret");
 
     // Checks if token exists
     if (!token) {
-      console.log('No token found in header')
+      console.log("No token found in header");
       return res.status(401).json({
         status: 401,
-        message: 'Authentication error'
-      })
+        message: "Authentication error",
+      });
     }
     // Checks if secret exists
-    if(!bearerTokenSecret) {
-      console.log('Missing bearerTokenSecret')
+    if (!bearerTokenSecret) {
+      console.log("Missing bearerTokenSecret");
       return res.status(500).json({
         status: 500,
-        message: 'Server error'
-      })
+        message: "Server error",
+      });
     } else {
       // If everything ok, verifies the token
-      const decoded = jwt.verify(token, bearerTokenSecret)
+      const decoded = jwt.verify(token, bearerTokenSecret);
 
       // If not verified
-      if(!decoded) {
-        console.log('Token is not verified')
+      if (!decoded) {
+        console.log("Token is not verified");
         return res.status(401).json({
           status: 401,
-          message: 'Authentication error'
-        })
+          message: "Authentication error",
+        });
       }
 
       const foundToken = await pool.query(
@@ -56,35 +59,36 @@ exports.auth = async (req, res, next) => {
           WHERE bearer_token = $1;
         `,
         [token]
-      )
+      );
 
-      if(foundToken.rows.length === 0) {
-        console.log('Not token found in the DB')
+      if (foundToken.rows.length === 0) {
+        console.log("Not token found in the DB");
         return res.status(401).json({
           status: 401,
-          message: 'Authentication error'
-        })
+          message: "Authentication error",
+        });
       }
+
       // Saves decoded values into req.body.decoded
-      req.body.decoded = decoded
-      req.body.token = token
-      next()
+      req.body.decoded = decoded;
+      req.body.token = token;
+      next();
     }
   } catch (error) {
-    console.log(error.name)
+    console.log(error.name);
     // Checks for JWT token validation error
-    if(error.name === 'JsonWebTokenError') {
-      console.log('Web token auth error')
+    if (error.name === "JsonWebTokenError") {
+      console.log("Web token auth error");
       return res.status(401).json({
         status: 401,
-        message: 'Authentication error'
-      })
+        message: "Authentication error",
+      });
     }
     // General error handling
-    console.log('Something went wrong during token verification')
+    console.log("Something went wrong during token verification");
     return res.status(500).json({
       status: 500,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
