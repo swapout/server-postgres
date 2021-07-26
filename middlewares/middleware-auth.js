@@ -20,21 +20,21 @@ exports.auth = async (req, res, next) => {
     console.log("req.signedCookies: ", req.signedCookies);
     console.log("req.headers: ", req.headers);
     // Gets token from header
-    const token = req.headers.authorization?.split(" ")[1];
+    // const token = req.headers.authorization?.split(" ")[1];
     const signedCookie = req.signedCookies.authorization;
     console.log("signed and verified cookie: ", signedCookie);
     // Gets token secret
     const bearerTokenSecret = config.get("bearerTokenSecret");
 
     // Checks if token exists
-    if (!token) {
-      console.log("No token found in header");
-      return res.status(401).json({
-        status: 401,
-        message: "Authentication error",
-      });
-    }
-    // Checks if secret exists
+    // if (!token) {
+    //   console.log("No token found in header");
+    //   return res.status(401).json({
+    //     status: 401,
+    //     message: "Authentication error",
+    //   });
+    // }
+    Checks if secret exists
     if (!bearerTokenSecret) {
       console.log("Missing bearerTokenSecret");
       return res.status(500).json({
