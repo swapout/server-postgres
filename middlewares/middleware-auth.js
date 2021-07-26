@@ -34,7 +34,7 @@ exports.auth = async (req, res, next) => {
     //     message: "Authentication error",
     //   });
     // }
-    Checks if secret exists
+    // Checks if secret exists
     if (!bearerTokenSecret) {
       console.log("Missing bearerTokenSecret");
       return res.status(500).json({
