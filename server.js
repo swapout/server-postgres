@@ -11,8 +11,8 @@ console.log("dbHost: ", config.get("db.host"));
 
 const app = express();
 
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
-app.use(cookieParser());
+app.use(cors({ credentials: true, origin: config.get("client.url") }));
+app.use(cookieParser(config.get("cookie.secret")));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 

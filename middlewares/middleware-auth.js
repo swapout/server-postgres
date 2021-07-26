@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const config = require("config");
+const cookieParser = require("cookie-parser");
 const { pool } = require("../config/db");
 
 /**
@@ -20,7 +21,8 @@ exports.auth = async (req, res, next) => {
     console.log("req.headers: ", req.headers);
     // Gets token from header
     const token = req.headers.authorization?.split(" ")[1];
-
+    const signedCookie = req.signedCookies.authorization;
+    console.log("signed and verified cookie: ", signedCookie);
     // Gets token secret
     const bearerTokenSecret = config.get("bearerTokenSecret");
 
@@ -41,7 +43,7 @@ exports.auth = async (req, res, next) => {
       });
     } else {
       // If everything ok, verifies the token
-      const decoded = jwt.verify(token, bearerTokenSecret);
+      const decoded = jwt.verify(signedCookie, bearerTokenSecret);
 
       // If not verified
       if (!decoded) {
@@ -58,7 +60,7 @@ exports.auth = async (req, res, next) => {
           FROM bearer_tokens
           WHERE bearer_token = $1;
         `,
-        [token]
+        [signedCookie]
       );
 
       if (foundToken.rows.length === 0) {
@@ -71,7 +73,7 @@ exports.auth = async (req, res, next) => {
 
       // Saves decoded values into req.body.decoded
       req.body.decoded = decoded;
-      req.body.token = token;
+      req.body.token = signedCookie;
       next();
     }
   } catch (error) {

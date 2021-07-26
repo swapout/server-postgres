@@ -1,7 +1,7 @@
 {
-  "name": "server-mysql",
+  "name": "server-postgres",
   "version": "1.0.0",
-  "description": "server-mysql",
+  "description": "server-postgres",
   "main": "server.js",
   "scripts": {
     "dev": "NODE_ENV=dev nodemon",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bambooss/server-mysql.git"
+    "url": "git+https://github.com/bambooss/server-postgres.git"
   },
   "author": "Gabor Csecsetka",
   "license": "ISC",

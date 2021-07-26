@@ -183,8 +183,10 @@ exports.loginUser = async (req, res) => {
     const bearer_token = await createAndSaveBearerToken(foundUser, res, pool);
 
     res.cookie("authorization", bearer_token, {
+      signed: true,
       sameSite: true,
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
     });
 
     // Success response including the user and token
