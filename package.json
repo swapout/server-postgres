@@ -29,8 +29,10 @@
     "jsonwebtoken": "^8.5.1",
     "mailgun-js": "^0.22.0",
     "moment": "^2.29.1",
+    "morgan": "^1.10.0",
     "pg": "^8.5.1",
-    "pg-format": "^1.0.4"
+    "pg-format": "^1.0.4",
+    "rotating-file-stream": "^2.1.5"
   },
   "devDependencies": {
     "faker": "^5.5.3"
