@@ -16,24 +16,19 @@ const { pool } = require("../config/db");
  */
 exports.auth = async (req, res, next) => {
   try {
-    console.log("req.cookies: ", req.cookies);
-    console.log("req.signedCookies: ", req.signedCookies);
-    console.log("req.headers: ", req.headers);
-    // Gets token from header
-    // const token = req.headers.authorization?.split(" ")[1];
+    // Gets token from cookies
     const signedCookie = req.signedCookies.authorization;
-    console.log("signed and verified cookie: ", signedCookie);
     // Gets token secret
     const bearerTokenSecret = config.get("bearerTokenSecret");
 
     // Checks if token exists
-    // if (!token) {
-    //   console.log("No token found in header");
-    //   return res.status(401).json({
-    //     status: 401,
-    //     message: "Authentication error",
-    //   });
-    // }
+    if (!signedCookie) {
+      console.log("No token found in cookies");
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication error",
+      });
+    }
     // Checks if secret exists
     if (!bearerTokenSecret) {
       console.log("Missing bearerTokenSecret");

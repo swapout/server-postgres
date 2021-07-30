@@ -96,18 +96,23 @@ exports.createUser = async (req, res) => {
         message: "There was a problem processing languages",
       });
     }
-    res.cookie("bearer_token", bearer_token, {
-      httpOnly: true,
-    });
 
     await client.query("COMMIT");
     // Success response including the user and token
-    return res.status(201).json({
-      status: 201,
-      message: "User created",
-      // token: bearer_token,
-      user: normalizeUser(savedUser),
-    });
+    return res
+      .cookie("authorization", bearer_token, {
+        signed: true,
+        sameSite: true,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .status(201)
+      .json({
+        status: 201,
+        message: "User created",
+        // token: bearer_token,
+        user: normalizeUser(savedUser),
+      });
   } catch (error) {
     // console.log('Error.code: ', error.code)
     // console.log('Error.errno: ', error.errno)
@@ -182,20 +187,21 @@ exports.loginUser = async (req, res) => {
     // Create and save bearer token to the DB
     const bearer_token = await createAndSaveBearerToken(foundUser, res, pool);
 
-    res.cookie("authorization", bearer_token, {
-      signed: true,
-      sameSite: true,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    });
-
     // Success response including the user and token
-    return res.status(200).json({
-      status: 200,
-      message: "Login success",
-      token: bearer_token,
-      user: normalizeUser(foundUser),
-    });
+    return res
+      .cookie("authorization", bearer_token, {
+        signed: true,
+        sameSite: true,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .status(200)
+      .json({
+        status: 200,
+        message: "Login success",
+        token: bearer_token,
+        user: normalizeUser(foundUser),
+      });
   } catch (error) {
     // Error handling
     console.log(error.message);
@@ -731,10 +737,18 @@ exports.logout = async (req, res) => {
       [id, token]
     );
 
-    return res.status(200).json({
-      status: 200,
-      message: "logout successful",
-    });
+    return res
+      .clearCookie("authorization", {
+        signed: true,
+        sameSite: true,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .status(200)
+      .json({
+        status: 200,
+        message: "logout successful",
+      });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -758,10 +772,18 @@ exports.logoutAll = async (req, res) => {
       [id]
     );
 
-    return res.status(200).json({
-      status: 200,
-      message: "logout from all devices was successful",
-    });
+    return res
+      .clearCookie("authorization", {
+        signed: true,
+        sameSite: true,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .status(200)
+      .json({
+        status: 200,
+        message: "logout from all devices was successful",
+      });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
