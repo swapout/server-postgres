@@ -1,7 +1,7 @@
 {
-  "name": "server-mysql",
+  "name": "server-postgres",
   "version": "1.0.0",
-  "description": "server-mysql",
+  "description": "server-postgres",
   "main": "server.js",
   "scripts": {
     "dev": "NODE_ENV=dev nodemon",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bambooss/server-mysql.git"
+    "url": "git+https://github.com/bambooss/server-postgres.git"
   },
   "author": "Gabor Csecsetka",
   "license": "ISC",
@@ -21,14 +21,18 @@
     "axios": "^0.21.1",
     "bcryptjs": "^2.4.3",
     "config": "^3.3.6",
+    "cookie": "^0.4.0",
+    "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "gravatar": "^1.8.1",
     "jsonwebtoken": "^8.5.1",
     "mailgun-js": "^0.22.0",
     "moment": "^2.29.1",
+    "morgan": "^1.10.0",
     "pg": "^8.5.1",
-    "pg-format": "^1.0.4"
+    "pg-format": "^1.0.4",
+    "rotating-file-stream": "^2.1.5"
   },
   "devDependencies": {
     "faker": "^5.5.3"
